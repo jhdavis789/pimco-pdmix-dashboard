@@ -1,0 +1,1718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PIMCO GNMA and Government Securities Fund (PDMIX) — Factor Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root{--bg-0:#f5f7fa;--bg-1:#ffffff;--bg-2:#edf1f5;--border:#cdd6df;--text:#2c3e50;--text-dim:#7b8a9a;--accent:#018AC0;--accent2:#005a7a;--accent3:#c49a2a;--red:#c0392b;--blue:#2980b9;--mono:"SF Mono","Fira Code",monospace;--sans:"Inter","SF Pro",system-ui,sans-serif}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg-0);color:var(--text);font-family:var(--sans);font-size:13px;line-height:1.5;overflow-x:hidden}
+a{color:var(--accent);text-decoration:none}
+
+/* Header */
+.header{background:var(--bg-1);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.header-left{display:flex;align-items:center;gap:16px}
+.fund-name{font-family:var(--mono);font-size:15px;font-weight:700;color:var(--accent);letter-spacing:1px}
+.fund-meta{font-size:11px;color:var(--text-dim)}
+.header-controls{display:flex;gap:8px;align-items:center}
+.range-btn{background:var(--bg-2);border:1px solid var(--border);color:var(--text-dim);padding:4px 12px;border-radius:4px;cursor:pointer;font-size:11px;font-family:var(--mono)}
+.range-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600}
+.freq-btn{background:var(--bg-2);border:1px solid var(--border);color:var(--text-dim);padding:4px 10px;border-radius:4px;cursor:pointer;font-size:10px;font-family:var(--mono);text-transform:uppercase}
+.freq-btn.active{background:var(--accent2);color:#fff;border-color:var(--accent2)}
+.freq-sep{color:var(--border);margin:0 4px}
+.date-input{background:var(--bg-2);border:1px solid var(--border);color:var(--text-dim);padding:3px 6px;border-radius:4px;font-size:10px;font-family:var(--mono);width:110px}
+.date-input::-webkit-calendar-picker-indicator{filter:invert(0.6)}
+
+/* Tabs */
+.nav-bar{background:var(--bg-1);border-bottom:1px solid var(--border);padding:0 24px;display:flex;gap:0;overflow-x:auto}
+.nav-tab{background:none;border:none;color:var(--text-dim);padding:10px 18px;cursor:pointer;font-size:12px;font-family:var(--mono);border-bottom:2px solid transparent;white-space:nowrap}
+.nav-tab:hover{color:var(--text)}
+.nav-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+
+/* Content */
+.content{padding:20px 24px;max-width:1600px;margin:0 auto}
+.section{display:none}
+.section.active{display:block}
+
+/* Stat cards */
+.stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px}
+.stat-card{background:var(--bg-1);border:1px solid var(--border);border-radius:6px;padding:12px 16px}
+.stat-label{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;font-family:var(--mono);margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.stat-value{font-size:22px;font-weight:700;font-family:var(--mono);color:var(--text)}
+.stat-value.accent{color:var(--accent)}
+.stat-sub{font-size:10px;color:var(--text-dim);margin-top:2px;font-family:var(--mono)}
+
+/* Panels */
+.panel{background:var(--bg-1);border:1px solid var(--border);border-radius:6px;margin-bottom:16px;overflow:hidden}
+.panel-header{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.panel-title{font-size:12px;font-weight:600;font-family:var(--mono);color:var(--text);display:flex;align-items:center;gap:8px}
+.panel-body{padding:16px}
+.chart-wrap{position:relative;width:100%}
+.source-tag{font-size:9px;color:var(--text-dim);font-family:var(--mono);letter-spacing:0.5px;background:var(--bg-2);padding:2px 8px;border-radius:3px}
+
+/* Info button */
+.info-btn{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:var(--bg-2);color:var(--text-dim);font-size:9px;cursor:pointer;border:1px solid var(--border);font-family:var(--mono);font-style:italic;flex-shrink:0}
+.info-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+/* Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(44,62,80,0.3);z-index:200;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:var(--bg-1);border:1px solid var(--border);border-radius:8px;padding:20px 24px;max-width:560px;width:90%;max-height:80vh;overflow-y:auto}
+.modal h3{font-size:14px;color:var(--accent);font-family:var(--mono);margin-bottom:12px}
+.modal p{font-size:12px;color:var(--text);line-height:1.6;margin-bottom:8px}
+.modal .formula{background:var(--bg-2);padding:8px 12px;border-radius:4px;font-family:var(--mono);font-size:11px;color:var(--accent3);margin:8px 0}
+.modal .caveat{color:var(--text-dim);font-size:11px;font-style:italic}
+.modal-close{background:var(--bg-2);border:1px solid var(--border);color:var(--text);padding:6px 16px;border-radius:4px;cursor:pointer;font-size:11px;margin-top:12px}
+
+/* Two column layout */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:1000px){.two-col{grid-template-columns:1fr}}
+
+/* Data table */
+.data-table-wrap{overflow-x:auto;max-height:600px;overflow-y:auto}
+.data-table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11px}
+.data-table th{position:sticky;top:0;background:var(--bg-2);color:var(--accent);padding:6px 10px;text-align:right;border-bottom:2px solid var(--border);white-space:nowrap;cursor:pointer;font-size:10px}
+.data-table th:first-child{text-align:left}
+.data-table td{padding:4px 10px;text-align:right;border-bottom:1px solid var(--border);white-space:nowrap}
+.data-table td:first-child{text-align:left;color:var(--accent)}
+.data-table tr:hover td{background:var(--bg-2)}
+.data-table .null{color:var(--text-dim);font-style:italic}
+.export-btn{background:var(--bg-2);border:1px solid var(--border);color:var(--text);padding:6px 14px;border-radius:4px;cursor:pointer;font-size:11px;font-family:var(--mono)}
+.export-btn:hover{background:var(--accent);color:#fff}
+
+/* Event annotations */
+.event-label{font-size:9px;font-family:var(--mono);fill:var(--text-dim)}
+
+/* Audit tab */
+.audit-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.audit-stat{background:var(--bg-1);border:1px solid var(--border);border-radius:6px;padding:16px;text-align:center}
+.audit-stat .num{font-size:28px;font-weight:700;font-family:var(--mono)}
+.audit-stat .lbl{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;font-family:var(--mono);margin-top:4px}
+.audit-stat.pass .num{color:#018AC0}
+.audit-stat.warn .num{color:#c49a2a}
+.audit-stat.fail .num{color:#c0392b}
+.audit-stat.total .num{color:var(--text)}
+
+.audit-category{margin-bottom:20px}
+.audit-category-title{font-size:13px;font-weight:600;font-family:var(--mono);color:var(--text);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.audit-category-title .badge{font-size:9px;padding:2px 8px;border-radius:10px;font-family:var(--mono)}
+
+.finding-card{background:var(--bg-1);border:1px solid var(--border);border-radius:6px;padding:12px 16px;margin-bottom:8px;border-left:3px solid var(--border)}
+.finding-card.sev-pass{border-left-color:#018AC0}
+.finding-card.sev-warning{border-left-color:#c49a2a}
+.finding-card.sev-fail{border-left-color:#c0392b}
+
+.finding-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.finding-name{font-size:12px;font-weight:600;font-family:var(--mono);color:var(--text)}
+.finding-badge{font-size:9px;padding:2px 8px;border-radius:10px;font-family:var(--mono);font-weight:600}
+.finding-badge.pass{background:#018AC020;color:#018AC0}
+.finding-badge.warning{background:#c49a2a20;color:#c49a2a}
+.finding-badge.fail{background:#c0392b20;color:#c0392b}
+
+.finding-msg{font-size:11px;color:var(--text);margin-bottom:6px;line-height:1.5}
+.finding-detail{font-size:10px;font-family:var(--mono);color:var(--text-dim);line-height:1.6;background:var(--bg-2);padding:8px 10px;border-radius:4px;margin-top:6px;overflow-x:auto;white-space:pre-wrap;word-break:break-all}
+.finding-detail span{color:var(--accent3)}
+.finding-meta{display:flex;gap:16px;flex-wrap:wrap;margin-top:6px}
+.finding-meta-item{font-size:10px;color:var(--text-dim);font-family:var(--mono)}
+.finding-meta-item b{color:var(--text)}
+
+.coverage-bar{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.coverage-bar .field-name{font-size:10px;font-family:var(--mono);color:var(--text-dim);width:120px;text-align:right;flex-shrink:0}
+.coverage-bar .bar-bg{flex:1;height:14px;background:var(--bg-2);border-radius:3px;overflow:hidden;position:relative}
+.coverage-bar .bar-fill{height:100%;border-radius:3px;transition:width 0.3s}
+.coverage-bar .bar-pct{font-size:9px;font-family:var(--mono);color:var(--text-dim);width:45px;text-align:right;flex-shrink:0}
+.range-btns{display:flex;gap:4px}
+.range-btns button{background:var(--bg-2);border:1px solid var(--border);color:var(--text-dim);padding:3px 10px;border-radius:4px;cursor:pointer;font-size:10px;font-family:var(--mono)}
+.range-btns button.active{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600}
+/* Commentary tab */
+.commentary-controls{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.commentary-filter{background:var(--bg-2);border:1px solid var(--border);color:var(--text-dim);padding:5px 12px;border-radius:4px;cursor:pointer;font-size:11px;font-family:var(--mono);transition:all .15s}
+.commentary-filter:hover{color:var(--text);border-color:var(--text-dim)}
+.commentary-filter.active{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600}
+.commentary-count{font-size:10px;color:var(--text-dim);font-family:var(--mono);margin-left:auto}
+.commentary-timeline{position:relative}
+.cm-month{margin-bottom:24px}
+.cm-month-header{font-size:14px;font-weight:700;font-family:var(--mono);color:var(--accent);padding:8px 0;border-bottom:2px solid var(--border);margin-bottom:10px;display:flex;align-items:center;gap:10px}
+.cm-badge{font-size:10px;font-weight:400;color:var(--text-dim);background:var(--bg-2);padding:2px 8px;border-radius:10px;font-family:var(--mono)}
+.cm-bullet{background:var(--bg-1);border:1px solid var(--border);border-radius:6px;padding:12px 16px;margin-bottom:8px;border-left:3px solid var(--border);transition:border-color .2s}
+.cm-bullet:hover{border-color:var(--accent)}
+.cm-bullet.cat-duration{border-left-color:#005a7a}
+.cm-bullet.cat-spreads{border-left-color:#c49a2a}
+.cm-bullet.cat-yields{border-left-color:#018AC0}
+.cm-bullet.cat-flows{border-left-color:#2980b9}
+.cm-bullet.cat-quality{border-left-color:#8e6eb5}
+.cm-bullet.cat-risk{border-left-color:#99B9C2}
+.cm-bullet-header{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.cm-cat-tag{font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:10px;font-weight:600;flex-shrink:0}
+.cm-cat-tag.cat-duration{background:#005a7a18;color:#005a7a}
+.cm-cat-tag.cat-spreads{background:#c49a2a18;color:#c49a2a}
+.cm-cat-tag.cat-yields{background:#018AC018;color:#018AC0}
+.cm-cat-tag.cat-flows{background:#2980b918;color:#2980b9}
+.cm-cat-tag.cat-quality{background:#8e6eb518;color:#8e6eb5}
+.cm-cat-tag.cat-risk{background:#99B9C218;color:#5b8a9a}
+.cm-title{font-size:12px;font-weight:600;font-family:var(--mono);color:var(--text)}
+.cm-detail{font-size:11px;color:var(--text-dim);line-height:1.5;font-family:var(--mono);margin-top:2px}
+
+.share-fab{position:fixed;bottom:24px;right:24px;z-index:8000;cursor:pointer;user-select:none}
+.share-fab-btn{display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:6px;background:var(--bg-2);border:1px solid var(--border-bright,var(--border));color:var(--text-dim);font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;transition:all .25s;box-shadow:0 4px 16px rgba(0,0,0,.4);white-space:nowrap}
+.share-fab-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--bg-1)}
+.share-fab-btn svg{width:14px;height:14px;fill:currentColor;flex-shrink:0}
+.share-toast{position:fixed;bottom:66px;right:24px;z-index:8001;background:var(--accent);color:#ffffff;font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.5px;padding:8px 16px;border-radius:4px;opacity:0;transform:translateY(8px);transition:all .3s;pointer-events:none;white-space:nowrap}
+.share-toast.show{opacity:1;transform:translateY(0)}
+.chart-range-bar{display:flex;gap:2px;margin-left:auto;margin-right:8px}
+.cr-btn{background:none;border:1px solid var(--border);color:var(--text-dim);padding:1px 5px;border-radius:3px;font-size:9px;font-family:var(--mono);cursor:pointer;line-height:1.4}
+.cr-btn:hover{border-color:var(--accent);color:var(--accent)}
+.cr-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="fund-name">PDMIX</div>
+    <div class="fund-meta" id="header-meta">Loading...</div>
+  </div>
+  <div class="header-controls">
+    <button class="freq-btn" data-freq="daily" onclick="setFreq('daily')">Daily</button>
+    <button class="freq-btn" data-freq="weekly" onclick="setFreq('weekly')">Weekly</button>
+    <button class="freq-btn active" data-freq="monthly" onclick="setFreq('monthly')">Monthly</button>
+    <span class="freq-sep">|</span>
+    <button class="range-btn" data-range="1" onclick="setRange(1)">1M</button>
+    <button class="range-btn" data-range="3" onclick="setRange(3)">3M</button>
+    <button class="range-btn" data-range="6" onclick="setRange(6)">6M</button>
+    <button class="range-btn" data-range="12" onclick="setRange(12)">1Y</button>
+    <button class="range-btn" data-range="36" onclick="setRange(36)">3Y</button>
+    <button class="range-btn" data-range="60" onclick="setRange(60)">5Y</button>
+    <button class="range-btn" data-range="120" onclick="setRange(120)">10Y</button>
+    <button class="range-btn active" data-range="0" onclick="setRange(0)">MAX</button>
+    <span class="freq-sep">|</span>
+    <input type="date" id="range-start" class="date-input" onchange="setCustomRange()">
+    <span style="color:var(--text-dim);font-size:10px">to</span>
+    <input type="date" id="range-end" class="date-input" onchange="setCustomRange()">
+  </div>
+</div>
+
+<div class="nav-bar">
+  <button class="nav-tab active" data-section="overview" onclick="showTab('overview')">Overview</button>
+  <button class="nav-tab" data-section="duration" onclick="showTab('duration')">Duration</button>
+  <button class="nav-tab" data-section="spreads" onclick="showTab('spreads')">Spreads</button>
+  <button class="nav-tab" data-section="yields" onclick="showTab('yields')">Yields</button>
+  <button class="nav-tab" data-section="aum" onclick="showTab('aum')">AUM & Flows</button>
+  <button class="nav-tab" data-section="performance" onclick="showTab('performance')">Performance</button>
+  <button class="nav-tab" data-section="data" onclick="showTab('data')">Data Table</button>
+  <button class="nav-tab" data-section="commentary" onclick="showTab('commentary')">Commentary</button>
+  <button class="nav-tab" data-section="audit" onclick="showTab('audit')">Audit</button>
+  <button class="nav-tab" data-section="staleness" onclick="showTab('staleness')">Staleness</button>
+</div>
+
+<div class="content">
+
+<!-- ═══════════ OVERVIEW ═══════════ -->
+<div class="section active" id="sec-overview">
+  <div class="stat-row" id="overview-stats"></div>
+  <div class="panel"><div class="panel-header"><span class="panel-title">NAV History <span class="info-btn" onclick="showInfo('nav')">i</span></span><span class="source-tag">PIMCO API · monthEndNav / dailyNav</span></div><div class="panel-body"><div class="chart-wrap" style="height:300px"><canvas id="chart-nav"></canvas></div></div></div>
+  <div class="two-col">
+    <div class="panel"><div class="panel-header"><span class="panel-title">AUM Growth <span class="info-btn" onclick="showInfo('aum_overview')">i</span></span><span class="source-tag">PIMCO API · totalNetAssets</span></div><div class="panel-body"><div class="chart-wrap" style="height:260px"><canvas id="chart-aum-overview"></canvas></div></div></div>
+    <div class="panel"><div class="panel-header"><span class="panel-title">Credit Quality Migration <span class="info-btn" onclick="showInfo('quality')">i</span></span><span class="source-tag">PIMCO API · avgQuality</span></div><div class="panel-body"><div class="chart-wrap" style="height:260px"><canvas id="chart-quality"></canvas></div></div></div>
+  </div>
+  <div class="panel"><div class="panel-header"><span class="panel-title">Distribution History <span class="info-btn" onclick="showInfo('dist_hist')">i</span></span><span class="source-tag">PIMCO API · latestDividendDistribution</span></div><div class="panel-body"><div class="chart-wrap" style="height:220px"><canvas id="chart-dist-hist"></canvas></div></div></div>
+</div>
+
+<!-- ═══════════ DURATION ═══════════ -->
+<div class="section" id="sec-duration">
+  <div class="stat-row" id="duration-stats"></div>
+  <div class="panel"><div class="panel-header"><span class="panel-title">Duration Regime Map <span class="info-btn" onclick="showInfo('dur_regime')">i</span></span><span class="source-tag">PIMCO API · DAILY</span></div><div class="panel-body"><div class="chart-wrap" style="height:340px"><canvas id="chart-dur-regime"></canvas></div></div></div>
+  <div class="two-col">
+    <div class="panel"><div class="panel-header"><span class="panel-title">Curve Duration <span class="info-btn" onclick="showInfo('curve_dur')">i</span></span><span class="source-tag">PIMCO API · totalCurveDuration</span></div><div class="panel-body"><div class="chart-wrap" style="height:260px"><canvas id="chart-curve-dur"></canvas></div></div></div>
+    <div class="panel"><div class="panel-header"><span class="panel-title">Bull/Bear Asymmetry <span class="info-btn" onclick="showInfo('bull_bear')">i</span></span><span class="source-tag">DERIVED</span></div><div class="panel-body"><div class="chart-wrap" style="height:260px"><canvas id="chart-bull-bear"></canvas></div></div></div>
+  </div>
+  <div class="panel"><div class="panel-header"><span class="panel-title">Convexity Proxy <span class="info-btn" onclick="showInfo('convexity')">i</span></span><span class="source-tag">DERIVED</span></div><div class="panel-body"><div class="chart-wrap" style="height:260px"><canvas id="chart-convexity"></canvas></div></div></div>
+</div>
+
+<!-- ═══════════ SPREADS ═══════════ -->
+<div class="section" id="sec-spreads">
+  <div class="stat-row" id="spread-stats"></div>
+  <div class="panel"><div class="panel-header"><span class="panel-title">Spread Decomposition (Stacked) <span class="info-btn" onclick="showInfo('spread_stack')">i</span></span><span class="source-tag">PIMCO API · eomAccountSpread</span></div><div class="panel-body"><div class="chart-wrap" style="height:360px"><canvas id="chart-spread-stack"></canvas></div></div></div>
+  <div class="panel"><div class="panel-header"><span class="panel-title">Spread Components (Overlay) <span class="info-btn" onclick="showInfo('spread_lines')">i</span></span><span class="source-tag">PIMCO API · eomAccountSpread</span></div><div class="panel-body"><div class="chart-wrap" style="height:300px"><canvas id="chart-spread-lines"></canvas></div></div></div>
+  <div class="two-col">
+    <div class="panel"><div class="panel-header"><span class="panel-title">DTS (Duration × Spread) <span class="info-btn" onclick="showInfo('dts')">i</span></span><span class="source-tag">DERIVED</span></div><div class="panel-body"><div class="chart-wrap" style="height:260px"><canvas id="chart-dts"></canvas></div></div></div>
+    <div class="panel"><div class="panel-header"><span class="panel-title">Swap Spread <span class="info-btn" onclick="showInfo('swap_spread')">i</span></span><span class="source-tag">PIMCO API · swapSpread</span></div><div class="panel-body"><div class="chart-wrap" style="height:260px"><canvas id="chart-swap"></canvas></div></div></div>
+  </div>
+</div>
+
+<!-- ═══════════ YIELDS ═══════════ -->
+<div class="section" id="sec-yields">
+  <div class="stat-row" id="yield-stats"></div>
+  <div class="panel"><div class="panel-header"><span class="panel-title">Yield Comparison <span class="info-btn" onclick="showInfo('yield_comp')">i</span></span><span class="source-tag">PIMCO API · MULTIPLE FIELDS</span></div><div class="panel-body"><div class="chart-wrap" style="height:340px"><canvas id="chart-yield-comp"></canvas></div></div></div>
+  <div class="two-col">
+    <div class="panel"><div class="panel-header"><span class="panel-title">YTM − Current Yield Spread <span class="info-btn" onclick="showInfo('yield_spread')">i</span></span><span class="source-tag">DERIVED</span></div><div class="panel-body"><div class="chart-wrap" style="height:260px"><canvas id="chart-yield-spread"></canvas></div></div></div>
+    <div class="panel"><div class="panel-header"><span class="panel-title">Distribution Yield <span class="info-btn" onclick="showInfo('dist_yield')">i</span></span><span class="source-tag">PIMCO API · annualizedDistributionYield</span></div><div class="panel-body"><div class="chart-wrap" style="height:260px"><canvas id="chart-dist-yield"></canvas></div></div></div>
+  </div>
+</div>
+
+<!-- ═══════════ AUM & FLOWS ═══════════ -->
+<div class="section" id="sec-aum">
+  <div class="stat-row" id="aum-stats"></div>
+  <div class="panel"><div class="panel-header"><span class="panel-title">AUM History <span class="info-btn" onclick="showInfo('aum_hist')">i</span></span><span class="source-tag">PIMCO API · totalNetAssets</span></div><div class="panel-body"><div class="chart-wrap" style="height:300px"><canvas id="chart-aum-hist"></canvas></div></div></div>
+  <div class="two-col">
+    <div class="panel"><div class="panel-header"><span class="panel-title">Shares Outstanding <span class="info-btn" onclick="showInfo('shares')">i</span></span><span class="source-tag">PIMCO API · sharesOutstanding</span></div><div class="panel-body"><div class="chart-wrap" style="height:260px"><canvas id="chart-shares"></canvas></div></div></div>
+    <div class="panel"><div class="panel-header"><span class="panel-title">Implied Monthly Flow <span class="info-btn" onclick="showInfo('flow')">i</span></span><span class="source-tag">DERIVED</span></div><div class="panel-body"><div class="chart-wrap" style="height:260px"><canvas id="chart-flow"></canvas></div></div></div>
+  </div>
+  <div class="panel"><div class="panel-header"><span class="panel-title">Leverage Proxy (Portfolio MV / AUM) <span class="info-btn" onclick="showInfo('leverage')">i</span></span><span class="source-tag">DERIVED</span></div><div class="panel-body"><div class="chart-wrap" style="height:260px"><canvas id="chart-leverage"></canvas></div></div></div>
+</div>
+
+<!-- ═══════════ PERFORMANCE ═══════════ -->
+<div class="section" id="sec-performance">
+  <div class="stat-row" id="perf-summary"></div>
+  <div class="grid-2">
+    <div class="panel">
+      <span class="panel-title">Daily Total Return (After Fee) <span class="info-btn" onclick="showInfo('perf_return')">i</span></span>
+      <div class="panel-body"><div class="chart-wrap"><canvas id="chart-perf-daily"></canvas></div></div>
+    </div>
+    <div class="panel">
+      <span class="panel-title">Cumulative Return: Fund vs Benchmark <span class="info-btn" onclick="showInfo('perf_cumulative')">i</span></span>
+      <div class="panel-body"><div class="chart-wrap"><canvas id="chart-perf-cumulative"></canvas></div></div>
+    </div>
+  </div>
+  <div class="grid-2">
+    <div class="panel">
+      <span class="panel-title">Rolling 1-Year Return: Fund vs Benchmark <span class="info-btn" onclick="showInfo('perf_rolling')">i</span></span>
+      <div class="panel-body"><div class="chart-wrap"><canvas id="chart-perf-rolling"></canvas></div></div>
+    </div>
+    <div class="panel">
+      <span class="panel-title">Daily Alpha (Fund − Benchmark) <span class="info-btn" onclick="showInfo('perf_alpha')">i</span></span>
+      <div class="panel-body"><div class="chart-wrap"><canvas id="chart-perf-alpha"></canvas></div></div>
+    </div>
+  </div>
+  <div class="panel">
+    <span class="panel-title">Cumulative Alpha (Since Inception) <span class="info-btn" onclick="showInfo('perf_cum_alpha')">i</span></span>
+    <div class="panel-body"><div class="chart-wrap"><canvas id="chart-perf-cum-alpha"></canvas></div></div>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;margin:8px 0 4px 0">
+    <span style="font-size:10px;color:var(--text-2);font-weight:600;letter-spacing:1px;text-transform:uppercase">Capture Window:</span>
+    <div class="range-btns" id="capture-window-btns">
+      <button onclick="setCaptureWindow(12)">12M</button>
+      <button onclick="setCaptureWindow(24)">24M</button>
+      <button class="active" onclick="setCaptureWindow(36)">36M</button>
+      <button onclick="setCaptureWindow(60)">60M</button>
+    </div>
+  </div>
+  <div class="grid-2">
+    <div class="panel">
+      <span class="panel-title">Upside Capture Ratio <span id="cap-window-label-up">(Rolling 36-Month)</span> <span class="info-btn" onclick="showInfo('perf_upside_capture')">i</span></span>
+      <div class="panel-body"><div class="chart-wrap"><canvas id="chart-perf-upside-capture"></canvas></div></div>
+    </div>
+    <div class="panel">
+      <span class="panel-title">Downside Capture Ratio <span id="cap-window-label-down">(Rolling 36-Month)</span> <span class="info-btn" onclick="showInfo('perf_downside_capture')">i</span></span>
+      <div class="panel-body"><div class="chart-wrap"><canvas id="chart-perf-downside-capture"></canvas></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ DATA TABLE ═══════════ -->
+<div class="section" id="sec-data">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+    <span style="font-family:var(--mono);font-size:12px;color:var(--text-dim)" id="table-meta"></span>
+    <button class="export-btn" onclick="exportCSV()">Export CSV</button>
+  </div>
+  <div class="panel"><div class="panel-body"><div class="data-table-wrap" id="table-wrap"></div></div></div>
+</div>
+
+<!-- ═══════════ COMMENTARY ═══════════ -->
+<div class="section" id="sec-commentary">
+  <div class="stat-row" id="commentary-stats"></div>
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">Portfolio Management Commentary <span class="info-btn" onclick="showInfo('commentary')">i</span></span>
+      <span class="source-tag">SYSTEMATIC · PAST 2 YEARS</span>
+    </div>
+    <div class="panel-body">
+      <p style="font-size:11px;color:var(--text-dim);margin-bottom:14px;font-family:var(--mono);line-height:1.6">
+        Month-by-month analysis of portfolio positioning changes. Top 5 observations per month, ranked by analytical importance.
+        All observations are derived algorithmically from PIMCO API factor data — no subjective judgment.
+      </p>
+      <div class="commentary-controls" id="commentary-controls"></div>
+      <div class="commentary-timeline" id="commentary-timeline"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ AUDIT ═══════════ -->
+<div class="section" id="sec-audit">
+  <div class="audit-summary" id="audit-summary"></div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <span style="font-family:var(--mono);font-size:12px;color:var(--text-dim)" id="audit-meta"></span>
+    <span class="info-btn" onclick="showInfo('audit_methodology')" style="width:22px;height:22px;font-size:11px">i</span>
+  </div>
+
+  <!-- Coverage chart -->
+  <div class="panel"><div class="panel-header"><span class="panel-title">Data Completeness by Field <span class="info-btn" onclick="showInfo('completeness')">i</span></span><span class="source-tag">AUDIT</span></div><div class="panel-body" id="coverage-bars"></div></div>
+
+  <!-- Completeness heatmap -->
+  <div class="panel"><div class="panel-header"><span class="panel-title">Data Completeness Over Time <span class="info-btn" onclick="showInfo('heatmap')">i</span></span><span class="source-tag">AUDIT</span></div><div class="panel-body"><div class="chart-wrap" style="height:400px"><canvas id="chart-completeness-heatmap"></canvas></div></div></div>
+
+  <!-- Findings by category -->
+  <div id="audit-findings"></div>
+</div>
+
+<!-- ═══════════ STALENESS ═══════════ -->
+<div class="section" id="sec-staleness">
+  <div class="stat-row" id="staleness-summary"></div>
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">Daily Update Verification <span class="info-btn" onclick="showInfo('staleness')">i</span></span>
+      <span class="source-tag">DAILY DATA AUDIT</span>
+    </div>
+    <div class="panel-body">
+      <p style="font-size:11px;color:var(--text-dim);margin-bottom:16px;font-family:var(--mono)">
+        For each field, shows how often the value actually changed between consecutive business days.
+        Fields expected to update daily should have high change rates. Fields that stay constant for 5+ consecutive
+        business days are flagged as "stale runs".
+      </p>
+      <div id="staleness-table-wrap"></div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">Change Rate by Field <span class="info-btn" onclick="showInfo('change_rate')">i</span></span>
+      <span class="source-tag">DERIVED</span>
+    </div>
+    <div class="panel-body">
+      <div class="chart-wrap" style="height:400px"><canvas id="chart-change-rate"></canvas></div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">Stale Runs (5+ consecutive unchanged days) <span class="info-btn" onclick="showInfo('stale_runs')">i</span></span>
+      <span class="source-tag">DAILY DATA AUDIT</span>
+    </div>
+    <div class="panel-body">
+      <div id="stale-runs-wrap"></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /content -->
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeInfo()">
+  <div class="modal">
+    <h3 id="modal-title"></h3>
+    <div id="modal-body"></div>
+    <button class="modal-close" onclick="closeInfo()">Close</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="daily-confirm-overlay" onclick="if(event.target===this)cancelDaily()">
+  <div class="modal" style="text-align:center;max-width:480px">
+    <h3 style="margin-bottom:12px">Load Daily Data?</h3>
+    <p style="margin-bottom:8px;font-size:11px;color:var(--text-dim)">Daily mode renders many data points. Choose a range to limit browser load.</p>
+    <p style="margin-bottom:16px;font-size:11px;font-family:var(--mono)" id="daily-count-label"></p>
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:16px">
+      <button onclick="confirmDailyRange(12)" class="cr-btn" style="padding:6px 14px;font-size:11px">1 Year</button>
+      <button onclick="confirmDailyRange(36)" class="cr-btn" style="padding:6px 14px;font-size:11px">3 Years</button>
+      <button onclick="confirmDailyRange(60)" class="cr-btn" style="padding:6px 14px;font-size:11px">5 Years</button>
+      <button onclick="confirmDailyRange(0)" style="background:var(--accent);border:none;color:#fff;padding:6px 14px;border-radius:4px;cursor:pointer;font-size:11px;font-family:var(--mono)">All Data</button>
+    </div>
+    <button onclick="cancelDaily()" class="modal-close" style="margin-top:0">Cancel</button>
+  </div>
+</div>
+
+<script>
+// ─── DATA (loaded from external JSON) ───
+let D = null;
+let currentFreq = 'monthly';
+let currentRange = 0; // 0 = MAX
+let customStart = null; // custom date range
+let customEnd = null;
+let currentTab = 'overview';
+let charts = {};
+
+// Event annotations
+const EVENTS = [
+  {date:'2007-06',label:'Bear Stearns'},
+  {date:'2008-09',label:'Lehman'},
+  {date:'2009-03',label:'Market Bottom'},
+  {date:'2013-05',label:'Taper Tantrum'},
+  {date:'2015-12',label:'First Hike'},
+  {date:'2020-03',label:'COVID'},
+  {date:'2022-03',label:'Hike Cycle'},
+  {date:'2023-07',label:'Fed Pause'},
+  {date:'2024-09',label:'First Cut'},
+];
+
+// Info modal content
+const INFO = {
+  nav: {
+    title: 'NAV History',
+    body: `<p><b>What:</b> Net Asset Value per share over time.</p>
+<p><b>Source:</b> <code>monthEndNav</code> (monthly) or <code>dailyNav</code> (weekly) from the PIMCO fund-stats API.</p>
+<p><b>Caveats:</b> This is <b>price return only</b>, NOT total return. It does not include reinvested dividends. PDMIX pays monthly distributions (~$0.055/share), so the NAV understates the fund's actual performance. A $10.00 inception NAV that sits at $11.00 today has actually returned far more than 10% once distributions are included.</p>`
+  },
+  aum_overview: {
+    title: 'AUM Growth',
+    body: `<p><b>What:</b> Total net assets of the fund over time.</p>
+<p><b>Source:</b> <code>totalNetAssets</code> from the PIMCO fund-stats API.</p>
+<p><b>Caveats:</b> Raw USD values, not inflation-adjusted. AUM reflects both market performance and fund flows (inflows/outflows). The fund grew from $35M at inception (2007) to over $220B, making it one of the largest actively managed bond funds in the world.</p>`
+  },
+  quality: {
+    title: 'Credit Quality Migration',
+    body: `<p><b>What:</b> Average credit quality of the portfolio over time, shown as a letter grade.</p>
+<p><b>Source:</b> <code>eomAccountRiskMeasures.avgQuality</code> from the PIMCO API.</p>
+<p><b>Charting:</b> Letter grades are mapped to numbers for the Y-axis only: AAA=1, AA+=2, AA=3, AA-=4, A+=5, A=6, A-=7, BAA+(BBB+)=8, BAA(BBB)=9, BAA-(BBB-)=10, BA+(BB+)=11, BA(BB)=12. The axis is <b>inverted</b> so higher quality is at the top. Tooltips show the actual letter grade.</p>
+<p class="caveat">The mapping is for display purposes only — no interpolation or numerical averaging is performed.</p>`
+  },
+  dist_hist: {
+    title: 'Distribution History',
+    body: `<p><b>What:</b> Monthly dividend per share paid to investors.</p>
+<p><b>Source:</b> <code>latestDividendDistribution.value</code> from the PIMCO API.</p>
+<p><b>Caveats:</b> Raw per-share amounts. PDMIX distributes monthly. These amounts reflect income from the portfolio's bond holdings and may vary as portfolio composition and interest rates change.</p>`
+  },
+  dur_regime: {
+    title: 'Duration Regime Map',
+    body: `<p><b>What:</b> Three duration measures overlaid to show how PIMCO positions PDMIX for different rate scenarios.</p>
+<p><b>Effective Duration:</b> The portfolio's sensitivity to a parallel shift in rates. From <code>eomAccountDuration.duration</code>.</p>
+<p><b>Bull Duration:</b> Duration assuming rates <b>fall</b> 100bp. From <code>eomAccountDuration.bullDuration</code>. Lower than effective = the portfolio gains less in a rally (negative convexity, typical of MBS).</p>
+<p><b>Bear Duration:</b> Duration assuming rates <b>rise</b> 100bp. From <code>eomAccountDuration.bearDuration</code>. Higher than effective = more exposure to rate increases.</p>
+<p class="caveat">The shaded region between bull and bear shows the asymmetry — wider gaps mean more convexity or optionality in the portfolio.</p>`
+  },
+  curve_dur: {
+    title: 'Curve Duration',
+    body: `<p><b>What:</b> Total key-rate (curve) duration — sensitivity to non-parallel rate moves (steepening/flattening).</p>
+<p><b>Source:</b> <code>eomAccountDuration.totalCurveDuration</code> or <code>accountDurationLBD.totalCurveDuration</code>.</p>
+<p class="caveat"><b>Not available before 2010.</b> The API returns no value for this field from 2007-2009. The gap is shown as a break in the chart — no interpolation.</p>`
+  },
+  bull_bear: {
+    title: 'Bull/Bear Asymmetry',
+    body: `<p><b>What:</b> The gap between bear duration and bull duration.</p>
+<div class="formula">Bull/Bear Asymmetry = bearDuration − bullDuration</div>
+<p>Higher values mean the portfolio has more rate exposure on the downside (when rates rise) than it benefits on the upside (when rates fall). This is typical of MBS-heavy portfolios due to prepayment risk.</p>
+<p>A value near 0 means symmetric rate exposure. Large positive values (>2) indicate significant negative convexity.</p>`
+  },
+  convexity: {
+    title: 'Convexity Proxy',
+    body: `<p><b>What:</b> A measure of how the portfolio's duration changes as rates move.</p>
+<div class="formula">Convexity Proxy = (bullDuration + bearDuration) / 2 − duration</div>
+<p><b>Positive</b> = the portfolio gains more in a rally than it loses in a selloff (desirable, positive convexity).</p>
+<p><b>Negative</b> = the portfolio loses more in a selloff than it gains in a rally (negative convexity, common with MBS).</p>
+<p class="caveat">This is an approximation of option-adjusted convexity, not the true second derivative of price/yield.</p>`
+  },
+  spread_stack: {
+    title: 'Spread Decomposition (Stacked)',
+    body: `<p><b>What:</b> Breakdown of the portfolio's spread exposure by sector, stacked to show total.</p>
+<p><b>Source:</b> <code>eomAccountSpread</code> fields: mortgageSpread, corporateSpread, swapSpread, emSpread, coveredBondSpread, sovgRelatedSpread.</p>
+<p>Each component represents that sector's contribution to the portfolio's total spread risk, measured as a percentage of NAV.</p>
+<p><b>Swap spread</b> is often negative — this means the portfolio is paying fixed/receiving floating (payer swaps), which reduces total spread. It is shown below the zero line.</p>
+<p class="caveat">coveredBondSpread and sovgRelatedSpread only appear from 2013 onward. They are typically near zero for PDMIX.</p>`
+  },
+  spread_lines: {
+    title: 'Spread Components (Overlay)',
+    body: `<p><b>What:</b> Same data as the stacked chart, but shown as individual lines for easier comparison of relative movements.</p>
+<p><b>Source:</b> All six <code>eomAccountSpread</code> / <code>accountSpreadLBD</code> sub-fields.</p>`
+  },
+  dts: {
+    title: 'DTS (Duration Times Spread)',
+    body: `<p><b>What:</b> A combined measure of the portfolio's total spread risk, weighted by duration.</p>
+<div class="formula">DTS = duration (years) × total_spread (% of NAV) × 100</div>
+<p>Result is in basis points. Higher DTS = the portfolio is taking more combined interest-rate and credit risk.</p>
+<p><b>Total spread</b> is the sum of all 6 spread components (mortgage + corporate + swap + EM + covered + sovereign).</p>
+<p class="caveat">DTS is computed only when both duration and at least one spread component are available. Null otherwise.</p>`
+  },
+  swap_spread: {
+    title: 'Swap Spread',
+    body: `<p><b>What:</b> The portfolio's spread contribution from interest rate swaps.</p>
+<p><b>Source:</b> <code>eomAccountSpread.swapSpread</code> or <code>accountSpreadLBD.swapSpread</code>.</p>
+<p>Negative values indicate the portfolio is <b>paying fixed / receiving floating</b> (payer swaps), which is a common duration management tool. The more negative, the more PIMCO is using swaps to offset duration from cash bonds.</p>
+<p class="caveat">Not available before 2008. The first data point is 2008-06-30.</p>`
+  },
+  yield_comp: {
+    title: 'Yield Comparison',
+    body: `<p><b>What:</b> Three yield measures overlaid for comparison.</p>
+<p><b>YTM (Gross Yield to Maturity):</b> <code>estimatedGrossYieldToMaturity.value</code>. Pre-fee expected total return if all bonds held to maturity.</p>
+<p><b>Current Yield:</b> <code>currentYield.value</code>. Annual income / NAV. Reflects only coupon income, not capital gains/losses.</p>
+<p><b>SEC 30-Day Yield:</b> <code>subsidized30SecYield</code> × 100. Standardized SEC measure: net investment income over 30 days, annualized, net of expenses.</p>
+<p class="caveat">YTM > Current Yield typically means the portfolio holds bonds at a discount (pull-to-par gain expected). YTM < Current Yield would mean bonds are at a premium.</p>`
+  },
+  yield_spread: {
+    title: 'YTM − Current Yield Spread',
+    body: `<p><b>What:</b> The gap between gross YTM and current yield.</p>
+<div class="formula">Yield Spread = estimatedGrossYieldToMaturity − currentYield</div>
+<p><b>Positive</b> = the portfolio expects capital appreciation (bonds at a discount, pull-to-par).</p>
+<p><b>Negative</b> = the portfolio expects capital depreciation (bonds at a premium).</p>
+<p class="caveat">Computed only when both fields are available. Null otherwise.</p>`
+  },
+  dist_yield: {
+    title: 'Distribution Yield',
+    body: `<p><b>What:</b> Annualized distribution yield — what PDMIX actually pays out to investors.</p>
+<p><b>Source:</b> <code>annualizedDistributionYield.value</code>. This is a decimal (e.g. 0.057 = 5.7%). Displayed as percentage.</p>
+<p class="caveat">Computed by the API as: latest monthly dividend × 12 / NAV.</p>`
+  },
+  aum_hist: {
+    title: 'AUM History',
+    body: `<p><b>What:</b> Total net assets over the full fund history.</p>
+<p><b>Source:</b> <code>totalNetAssets</code> (monthly) or <code>totalNetAssetsDaily</code> (weekly).</p>
+<p class="caveat">Raw USD values, not inflation-adjusted. The Y-axis uses a log scale to make the early years visible alongside the $200B+ current size.</p>`
+  },
+  shares: {
+    title: 'Shares Outstanding',
+    body: `<p><b>What:</b> Number of fund shares outstanding — a proxy for cumulative fund flows.</p>
+<p><b>Source:</b> <code>monthlySharesOutstanding</code> (monthly) or <code>sharesOutstanding</code> (weekly).</p>
+<p>Rising = net inflows (more money coming in than leaving). Falling = net outflows.</p>`
+  },
+  flow: {
+    title: 'Implied Monthly Flow',
+    body: `<p><b>What:</b> Estimated monthly dollar flow into/out of the fund.</p>
+<div class="formula">Implied Flow = (shares_t − shares_{t−1}) × NAV_t</div>
+<p>Positive bars = estimated inflows. Negative = estimated outflows.</p>
+<p class="caveat"><b>This is an approximation.</b> It uses end-of-period NAV and ignores within-period NAV changes. Actual flows may differ. For monthly data, the comparison is month-over-month. For weekly, week-over-week.</p>`
+  },
+  leverage: {
+    title: 'Leverage Proxy',
+    body: `<p><b>What:</b> The ratio of the portfolio's cash bond market value to total AUM.</p>
+<div class="formula">Leverage Proxy = cusipCurrencyMv / totalNetAssets</div>
+<p>A ratio <b>below 1.0</b> means the portfolio's cash bond market value is less than the fund's NAV. The remaining risk exposure comes from derivatives (futures, swaps, options) and/or short positions.</p>
+<p>A ratio <b>above 1.0</b> would indicate explicit leverage (borrowing to buy more bonds).</p>
+<p class="caveat">For PDMIX, this has historically ranged from ~0.5 to 0.7, reflecting the significant derivatives overlay used for duration and spread management.</p>`
+  },
+  audit_methodology: {
+    title: 'Audit Methodology',
+    body: `<p>This audit performs automated data quality checks across 3 layers:</p>
+<p><b>Layer 1: Internal Consistency</b> — Compares redundant fields in the raw PIMCO API JSON (e.g., monthEndNav vs dailyNav, eomAccountDuration vs accountDurationLBD). Also validates derived calculations (shares*NAV=AUM, spread sum, yield formulas).</p>
+<p><b>Layer 2: Cross-Source Validation</b> — Fetches PDMIX NAV and dividend history from Yahoo Finance and compares against PIMCO API values for all overlapping dates.</p>
+<p><b>Layer 3: Structural Anomaly Detection</b> — Scans for null transitions (fields appearing/disappearing), statistical outliers (>3 sigma moves), impossible values (negative NAV/AUM), leverage proxy outliers, and credit quality rating changes.</p>
+<p class="caveat">The audit is read-only — it never modifies data. All comparisons use the raw cached API JSON, not the extracted records, to avoid masking extraction-layer bugs. Tolerances are stated with each finding.</p>`
+  },
+  completeness: {
+    title: 'Data Completeness by Field',
+    body: `<p><b>What:</b> Percentage of monthly data points where each field has a non-null value.</p>
+<p>Fields with low coverage either started being reported later in the fund's history (e.g., curve duration from 2010) or have sporadic availability in the API.</p>
+<p class="caveat">100% coverage doesn't mean the values are correct — only that they are present.</p>`
+  },
+  heatmap: {
+    title: 'Data Completeness Over Time',
+    body: `<p><b>What:</b> A heatmap showing which fields are available (green) or null (dark) at each monthly date.</p>
+<p>Y-axis shows field names. X-axis shows dates. Green cells mean data is present; dark cells mean null.</p>
+<p class="caveat">This chart uses the Chart.js matrix plugin rendered as a scatter plot. Each dot represents one field-date pair.</p>`
+  },
+  staleness: {
+    title: 'Daily Update Verification',
+    body: `<p><b>What:</b> Verifies that daily-frequency fields actually change between consecutive business days.</p>
+<p>For each field, we compare every pair of consecutive daily data points. If the values are identical (within floating-point tolerance of 1e-10), that pair is "unchanged". If they differ, it's "changed".</p>
+<p><b>Change Rate:</b> The percentage of consecutive pairs where the value changed. Daily-updating fields should have a high change rate (typically 60-95%). A very low change rate suggests the API is returning stale data.</p>
+<p><b>Stale Runs:</b> Stretches of 5 or more consecutive business days where a field's value did not change at all. Short stale runs can be normal (e.g., holidays, low-activity periods), but long runs may indicate API issues.</p>
+<p><b>Expected Frequency:</b> Fields are categorized as "daily" (expected to change most days) or "monthly" (only expected to change at month boundaries). Monthly fields are not flagged for staleness even if they don't change for weeks.</p>
+<p class="caveat">A change rate below 50% for a daily field is unusual. A change rate of exactly 0% means the field never changed across the entire history, which likely means the API is returning a static/cached value for that field.</p>`
+  },
+  change_rate: {
+    title: 'Change Rate by Field',
+    body: `<p><b>What:</b> Horizontal bar chart showing the percentage of consecutive daily pairs where each field's value changed.</p>
+<p>Green bars (>70%) = healthy daily updating. Yellow bars (30-70%) = partial updating. Red bars (<30%) = mostly static.</p>
+<p>Fields marked "monthly" are expected to have low change rates and are shown in grey for reference.</p>`
+  },
+  stale_runs: {
+    title: 'Stale Runs',
+    body: `<p><b>What:</b> Lists every instance where a daily-frequency field held the exact same value for 5 or more consecutive business days.</p>
+<p>Each row shows the field name, start/end dates of the stale period, number of days, and the value that was repeated.</p>
+<p class="caveat">Only the first 20 stale runs per field are shown. Monthly-frequency fields are excluded from this check.</p>`
+  },
+  commentary: {
+    title: 'Portfolio Management Commentary',
+    body: `<p><b>What:</b> Month-by-month analysis of how portfolio management has changed positioning over the past 2 years.</p>
+<p><b>How it works:</b></p>
+<ul style="font-size:12px;margin:4px 0 8px 16px">
+<li><b>Month-over-month changes:</b> For each month, we compare all key metrics to the prior month and compute absolute and percentage changes.</li>
+<li><b>Priority scoring:</b> Each observation is scored by (|change| / threshold) x weight. Top 5 per month shown.</li>
+<li><b>Categories:</b> Duration, Spreads, Yields, Flows, Quality, Risk.</li>
+</ul>
+<p class="caveat">All observations are derived mechanically from the data — no subjective judgment or forecasting.</p>`
+  },
+  perf_return: {
+    title: 'Daily Total Return',
+    body: `<p><b>What:</b> One-day total return after fees, from PIMCO's /performance endpoint. Total return includes both price change and distributions (dividends reinvested).</p>
+<p><b>Source:</b> afterFeePerformance.oneDay — this is NOT derivable from NAV alone since NAV drops on ex-dividend dates.</p>
+<p class="caveat">Data available from April 2007 (fund inception). Some dates return null (weekends, holidays).</p>`
+  },
+  perf_cumulative: {
+    title: 'Cumulative Return: Fund vs Benchmarks',
+    body: `<p><b>What:</b> Growth of $1 invested at inception, comparing PDMIX (after fees) to both benchmarks.</p>
+<div class="formula">Growth = (1 + sinceInception return) at each date</div>
+<p><b>Benchmarks:</b></p>
+<ul style="font-size:12px;margin:4px 0 8px 16px">
+<li style="color:#c49a2a"><b>Primary:</b> Bloomberg US Aggregate Bond Index — broad investment-grade US bond market</li>
+<li style="color:#c0392b"><b>Secondary:</b> Bloomberg US High Yield 2% Issuer Capped Index — below-investment-grade corporate bonds</li>
+</ul>
+<p>All series use the sinceInception field from the API — NOT compounded from daily returns. This is the official PIMCO calculation.</p>
+<p class="caveat">CUSIP for fund: 693390130. Benchmark identities are from PDMIX prospectus; the API does not disclose them directly.</p>`
+  },
+  perf_rolling: {
+    title: 'Rolling 1-Year Return',
+    body: `<p><b>What:</b> Trailing 1-year total return (after fees) at each date, comparing fund to both benchmarks.</p>
+<p><b>Source:</b> afterFeePerformance.oneYear, benchmarkPerformance.oneYear, and secondaryBenchmarkPerformance.oneYear.</p>
+<p><b>Benchmarks:</b> Primary = Bloomberg US Agg, Secondary = Bloomberg US HY 2% Capped.</p>
+<p class="caveat">First year of data shows null (no 1-year lookback available). These are the API's own trailing returns, not our calculation.</p>`
+  },
+  perf_alpha: {
+    title: 'Daily Alpha',
+    body: `<p><b>What:</b> Daily excess return = fund 1-day return minus primary benchmark 1-day return.</p>
+<div class="formula">alpha_1d = afterFeePerformance.oneDay − benchmarkPerformance.oneDay</div>
+<p>Alpha is computed vs the <b>primary benchmark</b> (Bloomberg US Aggregate).</p>
+<p class="caveat">Positive values mean PDMIX outperformed the benchmark that day. Very noisy on a daily basis.</p>`
+  },
+  perf_cum_alpha: {
+    title: 'Cumulative Alpha (Since Inception)',
+    body: `<p><b>What:</b> Cumulative outperformance vs primary benchmark (Bloomberg US Aggregate) since fund inception.</p>
+<div class="formula">alpha_si = afterFeePerformance.sinceInception − benchmarkPerformance.sinceInception</div>
+<p>This is the raw difference in cumulative returns, not a geometric excess return. Sourced directly from the API.</p>
+<p class="caveat">Rising line = PDMIX compounding ahead of benchmark. Flat = matching. Declining = underperforming.</p>`
+  },
+  perf_upside_capture: {
+    title: 'Upside Capture Ratio',
+    body: `<p><b>What:</b> Measures how much of the benchmark's positive months PDMIX captures, over a configurable rolling window (12, 24, 36, or 60 months).</p>
+<div class="formula">Upside Capture = (avg fund return in up months) / (avg benchmark return in up months) × 100</div>
+<p><b>Interpretation:</b></p>
+<ul style="font-size:12px;margin:4px 0 8px 16px">
+<li>&gt;100% = PDMIX gains more than the benchmark in up months</li>
+<li>100% = matches the benchmark in up months</li>
+<li>&lt;100% = PDMIX gains less than the benchmark in up months</li>
+</ul>
+<p><b>Benchmarks:</b></p>
+<ul style="font-size:12px;margin:4px 0 8px 16px">
+<li style="color:#c49a2a"><b>Primary:</b> Bloomberg US Aggregate Bond Index</li>
+<li style="color:#c0392b"><b>Secondary:</b> Bloomberg US High Yield 2% Issuer Capped Index</li>
+</ul>
+<p class="caveat">Monthly returns are compounded from daily returns. "Up months" = months where the benchmark had a positive return. Dashed line = 100% (neutral capture).</p>`
+  },
+  perf_downside_capture: {
+    title: 'Downside Capture Ratio',
+    body: `<p><b>What:</b> Measures how much of the benchmark's negative months PDMIX captures, over a configurable rolling window (12, 24, 36, or 60 months).</p>
+<div class="formula">Downside Capture = (avg fund return in down months) / (avg benchmark return in down months) × 100</div>
+<p><b>Interpretation:</b></p>
+<ul style="font-size:12px;margin:4px 0 8px 16px">
+<li>&lt;100% = PDMIX loses less than the benchmark in down months (good)</li>
+<li>100% = matches the benchmark in down months</li>
+<li>&gt;100% = PDMIX loses more than the benchmark in down months (bad)</li>
+</ul>
+<p><b>Ideal profile:</b> High upside capture + low downside capture = asymmetric return profile.</p>
+<p><b>Benchmarks:</b></p>
+<ul style="font-size:12px;margin:4px 0 8px 16px">
+<li style="color:#c49a2a"><b>Primary:</b> Bloomberg US Aggregate Bond Index</li>
+<li style="color:#c0392b"><b>Secondary:</b> Bloomberg US High Yield 2% Issuer Capped Index</li>
+</ul>
+<p class="caveat">Monthly returns are compounded from daily returns. "Down months" = months where the benchmark had a zero or negative return. Dashed line = 100% (neutral capture).</p>`
+  },
+};
+
+// ─── LOAD DATA ───
+fetch('pdmix_data.json').then(r=>r.json()).then(data=>{
+  D=data;
+  const dc=D.meta.daily_count||0;
+  const pc=D.meta.perf_count||0;
+  document.getElementById('header-meta').textContent=
+    (dc?dc+' daily · ':'')+D.meta.monthly_count+' monthly · '+D.meta.weekly_count+' weekly'+(pc?' · '+pc+' perf':'')+' · '+D.meta.first_date+' to '+D.meta.last_date;
+  if(!dc){document.querySelector('[data-freq="daily"]').style.opacity='0.4';}
+  // Inject per-chart range buttons into every panel with a canvas
+  document.querySelectorAll('.panel-header').forEach(ph=>{
+    if(!ph.parentElement.querySelector('canvas'))return;
+    const bar=document.createElement('div');
+    bar.className='chart-range-bar';
+    bar.innerHTML=[1,3,6,12,36,60,120,0].map(m=>{
+      const lbl=m===0?'MAX':m<12?m+'M':m===12?'1Y':(m/12)+'Y';
+      return '<button class="cr-btn'+(m===0?' active':'')+'" data-cr="'+m+'" onclick="setRange('+m+')">'+lbl+'</button>';
+    }).join('');
+    const src=ph.querySelector('.source-tag');
+    if(src)ph.insertBefore(bar,src);else ph.appendChild(bar);
+  });
+  buildAll();
+  setTimeout(restoreFromHash,300);
+}).catch(e=>{
+  document.getElementById('header-meta').textContent='Error loading data: '+e;
+});
+
+// ─── HELPERS ───
+function getData(){
+  if(currentFreq==='daily')return D.daily;
+  if(currentFreq==='weekly')return D.weekly;
+  return D.monthly;
+}
+
+function sliceRange(dates,arrays){
+  if(currentRange===0&&!customStart&&!customEnd)return{dates,arrays};
+  let startStr,endStr;
+  if(customStart||customEnd){
+    startStr=customStart||dates[0];
+    endStr=customEnd||dates[dates.length-1];
+  }else{
+    const cutoff=new Date();
+    cutoff.setMonth(cutoff.getMonth()-currentRange);
+    startStr=cutoff.toISOString().slice(0,10);
+    endStr='9999-12-31';
+  }
+  let si=0,ei=dates.length-1;
+  for(let i=0;i<dates.length;i++){if(dates[i]>=startStr){si=i;break;}}
+  for(let i=dates.length-1;i>=0;i--){if(dates[i]<=endStr){ei=i;break;}}
+  if(si>ei)si=ei;
+  return{
+    dates:dates.slice(si,ei+1),
+    arrays:arrays.map(a=>a?a.slice(si,ei+1):null)
+  };
+}
+
+function last(arr){for(let i=arr.length-1;i>=0;i--){if(arr[i]!=null)return arr[i];}return null;}
+function first(arr){for(let i=0;i<arr.length;i++){if(arr[i]!=null)return arr[i];}return null;}
+function fmt(v,dec=2){return v!=null?v.toLocaleString(undefined,{minimumFractionDigits:dec,maximumFractionDigits:dec}):'—';}
+function fmtB(v){if(v==null)return '—';if(Math.abs(v)>=1e12)return (v/1e12).toFixed(1)+'T';if(Math.abs(v)>=1e9)return (v/1e9).toFixed(1)+'B';if(Math.abs(v)>=1e6)return (v/1e6).toFixed(1)+'M';return v.toLocaleString();}
+function fmtPct(v,dec=2){return v!=null?v.toFixed(dec)+'%':'—';}
+
+// Quality label from numeric
+const QUAL_LABELS={1:'AAA',2:'AA+',3:'AA',4:'AA-',5:'A+',6:'A',7:'A-',8:'BBB+',9:'BBB',10:'BBB-',11:'BB+',12:'BB',13:'BB-',14:'B+',15:'B',16:'B-'};
+
+// Chart defaults
+Chart.defaults.color='#7b8a9a';
+Chart.defaults.borderColor='#cdd6df';
+Chart.defaults.font.family='"SF Mono","Fira Code",monospace';
+Chart.defaults.font.size=10;
+
+function sc(){return{grid:{color:'#e8ecf0'},ticks:{color:'#7b8a9a',font:{size:10,family:'"SF Mono","Fira Code",monospace'}}};}
+function tt(){return{backgroundColor:'#ffffff',titleColor:'#018AC0',bodyColor:'#e0e0e8',borderColor:'#cdd6df',borderWidth:1,titleFont:{family:'"SF Mono","Fira Code",monospace',size:11},bodyFont:{family:'"SF Mono","Fira Code",monospace',size:11},mode:'index',intersect:false,itemSort:(a,b)=>(b.parsed.y||0)-(a.parsed.y||0)};}
+function co(){return{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},tooltip:tt(),eventAnnotations:true}};}
+function xticks(){return{...sc().ticks,maxTicksLimit:currentFreq==='daily'?16:12};}
+
+// Event annotation plugin
+const eventPlugin={
+  id:'eventAnnotations',
+  afterDraw(chart){
+    if(!chart.options.plugins.eventAnnotations)return;
+    const dates=chart.data.labels;
+    if(!dates||!dates.length)return;
+    const ctx=chart.ctx;
+    const xAxis=chart.scales.x;
+    const yAxis=chart.scales.y;
+    EVENTS.forEach(ev=>{
+      // Find matching date (prefix match)
+      let idx=-1;
+      for(let i=0;i<dates.length;i++){
+        if(dates[i]&&dates[i].startsWith(ev.date)){idx=i;break;}
+      }
+      if(idx<0)return;
+      const x=xAxis.getPixelForValue(idx);
+      if(x<xAxis.left||x>xAxis.right)return;
+      ctx.save();
+      ctx.strokeStyle='#b8c4ce';
+      ctx.lineWidth=1;
+      ctx.setLineDash([4,4]);
+      ctx.beginPath();
+      ctx.moveTo(x,yAxis.top);
+      ctx.lineTo(x,yAxis.bottom);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle='#7b8a9a';
+      ctx.font='9px "SF Mono","Fira Code",monospace';
+      ctx.textAlign='center';
+      ctx.fillText(ev.label,x,yAxis.top-4);
+      ctx.restore();
+    });
+  }
+};
+Chart.register(eventPlugin);
+
+function mc(id,cfg){
+  if(charts[id]){charts[id].destroy();}
+  const ctx=document.getElementById(id);
+  if(!ctx)return;
+  charts[id]=new Chart(ctx,cfg);
+  return charts[id];
+}
+
+function lineDS(label,data,color,opts={}){
+  const bw=currentFreq==='daily'?1:1.5;
+  return{label,data,borderColor:color,backgroundColor:color+'20',borderWidth:bw,pointRadius:0,pointHitRadius:4,tension:0,fill:opts.fill||false,spanGaps:false,...opts};
+}
+
+// ─── BUILD ALL ───
+function buildAll(){
+  buildOverview();
+  buildDuration();
+  buildSpreads();
+  buildYields();
+  buildAUM();
+  buildPerformance();
+  buildTable();
+  buildCommentary();
+  buildAudit();
+  buildStaleness();
+}
+
+// ─── OVERVIEW TAB ───
+function buildOverview(){
+  const d=getData();
+  const navLast=last(d.nav);
+  const navFirst=first(d.nav);
+  const durLast=last(d.duration);
+  const ytmLast=last(d.ytm);
+  const tsLast=last(d.total_spread);
+  const dtsLast=last(d.dts);
+  const qlast=last(d.avg_quality);
+  const aumLast=last(d.aum);
+
+  document.getElementById('overview-stats').innerHTML=
+    '<div class="stat-card"><div class="stat-label">NAV</div><div class="stat-value accent">$'+fmt(navLast)+'</div><div class="stat-sub">Inception $'+fmt(navFirst)+'</div></div>'+
+    '<div class="stat-card"><div class="stat-label">AUM</div><div class="stat-value">$'+fmtB(aumLast)+'</div><div class="stat-sub">From $'+fmtB(first(d.aum))+'</div></div>'+
+    '<div class="stat-card"><div class="stat-label">Duration</div><div class="stat-value">'+fmt(durLast)+' yr</div></div>'+
+    '<div class="stat-card"><div class="stat-label">YTM</div><div class="stat-value">'+fmtPct(ytmLast)+'</div></div>'+
+    '<div class="stat-card"><div class="stat-label">Total Spread</div><div class="stat-value">'+fmtPct(tsLast)+'</div><div class="stat-sub">DTS '+fmt(dtsLast,0)+' bps</div></div>'+
+    '<div class="stat-card"><div class="stat-label">Credit Quality</div><div class="stat-value">'+(qlast||'—')+'</div></div>';
+
+  // NAV chart
+  const {dates:nd,arrays:[navArr]}=sliceRange(d.date,[d.nav]);
+  mc('chart-nav',{type:'line',data:{labels:nd,datasets:[lineDS('NAV',navArr,'#018AC0')]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...tt(),callbacks:{label:c=>c.parsed.y!=null?'$'+c.parsed.y.toFixed(2):'N/A'}},eventAnnotations:true},scales:{x:{...sc(),ticks:{...sc().ticks,maxTicksLimit:12}},y:{...sc(),ticks:{...sc().ticks,callback:v=>'$'+v.toFixed(0)}}}}});
+
+  // AUM chart
+  const {dates:ad,arrays:[aumArr]}=sliceRange(d.date,[d.aum]);
+  mc('chart-aum-overview',{type:'line',data:{labels:ad,datasets:[lineDS('AUM',aumArr,'#005a7a',{fill:true})]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...tt(),callbacks:{label:c=>'$'+fmtB(c.parsed.y)}},eventAnnotations:true},scales:{x:{...sc(),ticks:{...sc().ticks,maxTicksLimit:10}},y:{type:'logarithmic',...sc(),ticks:{...sc().ticks,callback:v=>'$'+fmtB(v)}}}}});
+
+  // Quality chart
+  const {dates:qd,arrays:[qualArr]}=sliceRange(d.date,[d.quality_numeric]);
+  mc('chart-quality',{type:'line',data:{labels:qd,datasets:[lineDS('Quality',qualArr,'#c49a2a')]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...tt(),callbacks:{label:c=>{const v=c.parsed.y;return QUAL_LABELS[Math.round(v)]||v;}}},eventAnnotations:true},scales:{x:{...sc(),ticks:{...sc().ticks,maxTicksLimit:10}},y:{...sc(),reverse:true,min:1,max:13,ticks:{...sc().ticks,callback:v=>QUAL_LABELS[v]||''}}}}});
+
+  // Distribution chart
+  const {dates:dd,arrays:[divArr]}=sliceRange(d.date,[d.latest_div]);
+  mc('chart-dist-hist',{type:'bar',data:{labels:dd,datasets:[{label:'Dividend',data:divArr,backgroundColor:'#018AC060',borderColor:'#018AC0',borderWidth:1,barPercentage:1.0,categoryPercentage:1.0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...tt(),callbacks:{label:c=>c.parsed.y!=null?'$'+c.parsed.y.toFixed(4):'N/A'}}},scales:{x:{...sc(),ticks:{...sc().ticks,maxTicksLimit:12}},y:{...sc(),ticks:{...sc().ticks,callback:v=>'$'+v.toFixed(3)}}}}});
+}
+
+// ─── DURATION TAB ───
+function buildDuration(){
+  const d=getData();
+  const durL=last(d.duration);
+  const bullL=last(d.bull_duration);
+  const bearL=last(d.bear_duration);
+  const curveL=last(d.curve_duration);
+  const asymL=last(d.bull_bear_asym);
+  const convL=last(d.convexity_proxy);
+
+  document.getElementById('duration-stats').innerHTML=
+    '<div class="stat-card"><div class="stat-label">Effective Duration</div><div class="stat-value accent">'+fmt(durL)+' yr</div></div>'+
+    '<div class="stat-card"><div class="stat-label">Bull Duration</div><div class="stat-value">'+fmt(bullL)+' yr</div></div>'+
+    '<div class="stat-card"><div class="stat-label">Bear Duration</div><div class="stat-value">'+fmt(bearL)+' yr</div></div>'+
+    '<div class="stat-card"><div class="stat-label">Curve Duration</div><div class="stat-value">'+fmt(curveL)+' yr</div><div class="stat-sub">Since 2010</div></div>'+
+    '<div class="stat-card"><div class="stat-label">Bull/Bear Asymmetry</div><div class="stat-value">'+fmt(asymL)+'</div></div>'+
+    '<div class="stat-card"><div class="stat-label">Convexity Proxy</div><div class="stat-value">'+fmt(convL,4)+'</div></div>';
+
+  // Duration regime
+  const {dates:rd,arrays:[durArr,bullArr,bearArr]}=sliceRange(d.date,[d.duration,d.bull_duration,d.bear_duration]);
+  mc('chart-dur-regime',{type:'line',data:{labels:rd,datasets:[
+    lineDS('Bear Duration',bearArr,'#c0392b',{fill:'+1',backgroundColor:'#c0392b15'}),
+    lineDS('Effective Duration',durArr,'#018AC0'),
+    lineDS('Bull Duration',bullArr,'#2980b9',{fill:'-1',backgroundColor:'#2980b915'}),
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{usePointStyle:true,pointStyle:'line',boxWidth:20}},tooltip:{...tt(),mode:'index',intersect:false},eventAnnotations:true},scales:{x:{...sc(),ticks:{...sc().ticks,maxTicksLimit:12}},y:{...sc(),title:{display:true,text:'Years',color:'#7b8a9a'}}}}});
+
+  // Curve duration
+  const {dates:cd,arrays:[curveArr]}=sliceRange(d.date,[d.curve_duration]);
+  mc('chart-curve-dur',{type:'line',data:{labels:cd,datasets:[lineDS('Curve Duration',curveArr,'#8e6eb5')]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...tt()},eventAnnotations:true},scales:{x:{...sc(),ticks:{...sc().ticks,maxTicksLimit:10}},y:{...sc(),title:{display:true,text:'Years',color:'#7b8a9a'}}}}});
+
+  // Bull/Bear asymmetry
+  const {dates:bd,arrays:[asymArr]}=sliceRange(d.date,[d.bull_bear_asym]);
+  mc('chart-bull-bear',{type:'line',data:{labels:bd,datasets:[lineDS('Asymmetry',asymArr,'#c49a2a',{fill:true,backgroundColor:'#c49a2a20'})]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...tt()},eventAnnotations:true},scales:{x:{...sc(),ticks:{...sc().ticks,maxTicksLimit:10}},y:{...sc()}}}});
+
+  // Convexity
+  const {dates:cvd,arrays:[convArr]}=sliceRange(d.date,[d.convexity_proxy]);
+  mc('chart-convexity',{type:'line',data:{labels:cvd,datasets:[lineDS('Convexity Proxy',convArr,'#99B9C2',{fill:true,backgroundColor:'#99B9C220'})]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...tt()},eventAnnotations:true},scales:{x:{...sc(),ticks:{...sc().ticks,maxTicksLimit:12}},y:{...sc()}}}});
+}
+
+// ─── SPREADS TAB ───
+function buildSpreads(){
+  const d=getData();
+  const mtgL=last(d.mtg_spread);
+  const corpL=last(d.corp_spread);
+  const emL=last(d.em_spread);
+  const swapL=last(d.swap_spread);
+  const tsL=last(d.total_spread);
+  const dtsL=last(d.dts);
+
+  document.getElementById('spread-stats').innerHTML=
+    '<div class="stat-card"><div class="stat-label">Mortgage Spread</div><div class="stat-value accent">'+fmtPct(mtgL)+'</div></div>'+
+    '<div class="stat-card"><div class="stat-label">Corporate Spread</div><div class="stat-value">'+fmtPct(corpL)+'</div></div>'+
+    '<div class="stat-card"><div class="stat-label">EM Spread</div><div class="stat-value">'+fmtPct(emL)+'</div></div>'+
+    '<div class="stat-card"><div class="stat-label">Swap Spread</div><div class="stat-value">'+fmtPct(swapL)+'</div></div>'+
+    '<div class="stat-card"><div class="stat-label">Total Spread</div><div class="stat-value">'+fmtPct(tsL)+'</div></div>'+
+    '<div class="stat-card"><div class="stat-label">DTS</div><div class="stat-value">'+fmt(dtsL,0)+' bps</div></div>';
+
+  const {dates:sd,arrays:[mtgA,corpA,emA,swapA,covA,sovA]}=sliceRange(d.date,
+    [d.mtg_spread,d.corp_spread,d.em_spread,d.swap_spread,d.covered_spread,d.sovg_spread]);
+
+  // Stacked
+  mc('chart-spread-stack',{type:'line',data:{labels:sd,datasets:[
+    lineDS('Mortgage',mtgA,'#018AC0',{fill:true,backgroundColor:'#018AC040'}),
+    lineDS('Corporate',corpA,'#005a7a',{fill:true,backgroundColor:'#005a7a40'}),
+    lineDS('EM',emA,'#c49a2a',{fill:true,backgroundColor:'#c49a2a40'}),
+    lineDS('Swap',swapA,'#c0392b',{fill:true,backgroundColor:'#c0392b40'}),
+    lineDS('Covered',covA,'#99B9C2',{fill:true,backgroundColor:'#99B9C220'}),
+    lineDS('Sovereign',sovA,'#8e6eb5',{fill:true,backgroundColor:'#8e6eb520'}),
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{usePointStyle:true,pointStyle:'line',boxWidth:20}},tooltip:{...tt(),mode:'index',intersect:false,callbacks:{label:c=>c.dataset.label+': '+fmtPct(c.parsed.y,4)}},eventAnnotations:true},scales:{x:{...sc(),ticks:{...sc().ticks,maxTicksLimit:12}},y:{...sc(),stacked:false,title:{display:true,text:'% of NAV',color:'#7b8a9a'}}}}});
+
+  // Lines overlay
+  mc('chart-spread-lines',{type:'line',data:{labels:sd,datasets:[
+    lineDS('Mortgage',mtgA,'#018AC0'),
+    lineDS('Corporate',corpA,'#005a7a'),
+    lineDS('EM',emA,'#c49a2a'),
+    lineDS('Swap',swapA,'#c0392b'),
+    lineDS('Covered',covA,'#99B9C2'),
+    lineDS('Sovereign',sovA,'#8e6eb5'),
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{usePointStyle:true,pointStyle:'line',boxWidth:20}},tooltip:{...tt(),mode:'index',intersect:false,callbacks:{label:c=>c.dataset.label+': '+fmtPct(c.parsed.y,4)}},eventAnnotations:true},scales:{x:{...sc(),ticks:{...sc().ticks,maxTicksLimit:12}},y:{...sc(),title:{display:true,text:'% of NAV',color:'#7b8a9a'}}}}});
+
+  // DTS
+  const {dates:dtsd,arrays:[dtsA]}=sliceRange(d.date,[d.dts]);
+  mc('chart-dts',{type:'line',data:{labels:dtsd,datasets:[lineDS('DTS',dtsA,'#c49a2a',{fill:true,backgroundColor:'#c49a2a20'})]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...tt(),callbacks:{label:c=>fmt(c.parsed.y,0)+' bps'}},eventAnnotations:true},scales:{x:{...sc(),ticks:{...sc().ticks,maxTicksLimit:10}},y:{...sc(),title:{display:true,text:'Basis Points',color:'#7b8a9a'}}}}});
+
+  // Swap spread
+  const {dates:swd,arrays:[swpA]}=sliceRange(d.date,[d.swap_spread]);
+  mc('chart-swap',{type:'line',data:{labels:swd,datasets:[lineDS('Swap Spread',swpA,'#c0392b',{fill:true,backgroundColor:'#c0392b20'})]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...tt(),callbacks:{label:c=>fmtPct(c.parsed.y,4)}},eventAnnotations:true},scales:{x:{...sc(),ticks:{...sc().ticks,maxTicksLimit:10}},y:{...sc(),title:{display:true,text:'% of NAV',color:'#7b8a9a'}}}}});
+}
+
+// ─── YIELDS TAB ───
+function buildYields(){
+  const d=getData();
+  const ytmL=last(d.ytm);
+  const cyL=last(d.current_yield);
+  const secL=last(d.sec_30d_yield);
+  const adyL=last(d.ann_dist_yield);
+  const divL=last(d.latest_div);
+  const ytdL=last(d.div_ytd);
+
+  document.getElementById('yield-stats').innerHTML=
+    '<div class="stat-card"><div class="stat-label">YTM (Gross)</div><div class="stat-value accent">'+fmtPct(ytmL)+'</div></div>'+
+    '<div class="stat-card"><div class="stat-label">Current Yield</div><div class="stat-value">'+fmtPct(cyL)+'</div></div>'+
+    '<div class="stat-card"><div class="stat-label">SEC 30-Day Yield</div><div class="stat-value">'+fmtPct(secL)+'</div></div>'+
+    '<div class="stat-card"><div class="stat-label">Dist Yield (Ann.)</div><div class="stat-value">'+fmtPct(adyL!=null?adyL*100:null)+'</div></div>'+
+    '<div class="stat-card"><div class="stat-label">Latest Div/Share</div><div class="stat-value">$'+fmt(divL,4)+'</div></div>'+
+    '<div class="stat-card"><div class="stat-label">YTD Distributions</div><div class="stat-value">$'+fmt(ytdL,4)+'</div></div>';
+
+  // Yield comparison
+  const {dates:yd,arrays:[ytmA,cyA,secA]}=sliceRange(d.date,[d.ytm,d.current_yield,d.sec_30d_yield]);
+  mc('chart-yield-comp',{type:'line',data:{labels:yd,datasets:[
+    lineDS('YTM (Gross)',ytmA,'#c49a2a'),
+    lineDS('Current Yield',cyA,'#018AC0'),
+    lineDS('SEC 30-Day',secA,'#005a7a'),
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{usePointStyle:true,pointStyle:'line',boxWidth:20}},tooltip:{...tt(),mode:'index',intersect:false,callbacks:{label:c=>c.dataset.label+': '+fmtPct(c.parsed.y)}},eventAnnotations:true},scales:{x:{...sc(),ticks:{...sc().ticks,maxTicksLimit:12}},y:{...sc(),ticks:{...sc().ticks,callback:v=>v+'%'}}}}});
+
+  // YTM - CY spread
+  const ytmCy=d.ytm.map((y,i)=>(y!=null&&d.current_yield[i]!=null)?Math.round((y-d.current_yield[i])*10000)/10000:null);
+  const {dates:ysd,arrays:[ysArr]}=sliceRange(d.date,[ytmCy]);
+  mc('chart-yield-spread',{type:'line',data:{labels:ysd,datasets:[lineDS('YTM − CY',ysArr,'#8e6eb5',{fill:true,backgroundColor:'#8e6eb520'})]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...tt(),callbacks:{label:c=>fmtPct(c.parsed.y)}},eventAnnotations:true},scales:{x:{...sc(),ticks:{...sc().ticks,maxTicksLimit:10}},y:{...sc(),ticks:{...sc().ticks,callback:v=>v.toFixed(1)+'%'}}}}});
+
+  // Distribution yield
+  const distYA=d.ann_dist_yield.map(v=>v!=null?v*100:null);
+  const {dates:dyd,arrays:[dyArr]}=sliceRange(d.date,[distYA]);
+  mc('chart-dist-yield',{type:'line',data:{labels:dyd,datasets:[lineDS('Dist Yield',dyArr,'#018AC0',{fill:true,backgroundColor:'#018AC020'})]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...tt(),callbacks:{label:c=>fmtPct(c.parsed.y)}},eventAnnotations:true},scales:{x:{...sc(),ticks:{...sc().ticks,maxTicksLimit:10}},y:{...sc(),ticks:{...sc().ticks,callback:v=>v.toFixed(1)+'%'}}}}});
+}
+
+// ─── AUM TAB ───
+function buildAUM(){
+  const d=getData();
+  const aumL=last(d.aum);
+  const sharesL=last(d.shares);
+  const mvL=last(d.portfolio_mv);
+  const levL=last(d.leverage_proxy);
+
+  // Compute implied flows
+  const flows=d.shares.map((s,i)=>{
+    if(i===0||s==null||d.shares[i-1]==null||d.nav[i]==null)return null;
+    return Math.round((s-d.shares[i-1])*d.nav[i]);
+  });
+
+  document.getElementById('aum-stats').innerHTML=
+    '<div class="stat-card"><div class="stat-label">AUM</div><div class="stat-value accent">$'+fmtB(aumL)+'</div></div>'+
+    '<div class="stat-card"><div class="stat-label">Shares Outstanding</div><div class="stat-value">'+fmtB(sharesL)+'</div></div>'+
+    '<div class="stat-card"><div class="stat-label">Portfolio MV</div><div class="stat-value">$'+fmtB(mvL)+'</div></div>'+
+    '<div class="stat-card"><div class="stat-label">Leverage Proxy</div><div class="stat-value">'+fmt(levL,3)+'x</div></div>';
+
+  // AUM history (log)
+  const {dates:ad,arrays:[aumA]}=sliceRange(d.date,[d.aum]);
+  mc('chart-aum-hist',{type:'line',data:{labels:ad,datasets:[lineDS('AUM',aumA,'#005a7a',{fill:true,backgroundColor:'#005a7a20'})]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...tt(),callbacks:{label:c=>'$'+fmtB(c.parsed.y)}},eventAnnotations:true},scales:{x:{...sc(),ticks:{...sc().ticks,maxTicksLimit:12}},y:{type:'logarithmic',...sc(),ticks:{...sc().ticks,callback:v=>'$'+fmtB(v)}}}}});
+
+  // Shares
+  const {dates:sd,arrays:[sharesA]}=sliceRange(d.date,[d.shares]);
+  mc('chart-shares',{type:'line',data:{labels:sd,datasets:[lineDS('Shares',sharesA,'#018AC0',{fill:true,backgroundColor:'#018AC020'})]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...tt(),callbacks:{label:c=>fmtB(c.parsed.y)}},eventAnnotations:true},scales:{x:{...sc(),ticks:{...sc().ticks,maxTicksLimit:10}},y:{...sc(),ticks:{...sc().ticks,callback:v=>fmtB(v)}}}}});
+
+  // Implied flows
+  const {dates:fd,arrays:[flowA]}=sliceRange(d.date,[flows]);
+  const flowColors=flowA.map(v=>v!=null?(v>=0?'#018AC080':'#c0392b80'):'transparent');
+  mc('chart-flow',{type:'bar',data:{labels:fd,datasets:[{label:'Implied Flow',data:flowA,backgroundColor:flowColors,borderWidth:0,barPercentage:1.0,categoryPercentage:1.0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...tt(),callbacks:{label:c=>'$'+fmtB(c.parsed.y)}}},scales:{x:{...sc(),ticks:{...sc().ticks,maxTicksLimit:10}},y:{...sc(),ticks:{...sc().ticks,callback:v=>'$'+fmtB(v)}}}}});
+
+  // Leverage
+  const {dates:ld,arrays:[levA]}=sliceRange(d.date,[d.leverage_proxy]);
+  mc('chart-leverage',{type:'line',data:{labels:ld,datasets:[lineDS('MV/AUM',levA,'#c49a2a',{fill:true,backgroundColor:'#c49a2a20'})]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...tt(),callbacks:{label:c=>c.parsed.y!=null?c.parsed.y.toFixed(3)+'x':'N/A'}},eventAnnotations:true},scales:{x:{...sc(),ticks:{...sc().ticks,maxTicksLimit:12}},y:{...sc(),ticks:{...sc().ticks,callback:v=>v.toFixed(2)+'x'}}}}});
+}
+
+// ─── PERFORMANCE TAB ───
+function buildPerformance(){
+  const P=D.performance;
+  if(!P||!P.date||P.date.length===0){
+    document.getElementById('perf-summary').innerHTML=
+      '<div class="stat-card"><div class="stat-label">Status</div><div class="stat-value">No performance data</div><div class="stat-sub">Run the performance fetch script first</div></div>';
+    return;
+  }
+  const BM1='Bloomberg US Aggregate (Primary)';
+  const BM2='Bloomberg US HY 2% Capped (Secondary)';
+  const dates=P.date;
+  const n=dates.length;
+  const lastIdx=n-1;
+  const pct=v=>v!==null&&v!==undefined?(v*100).toFixed(2)+'%':'\u2014';
+  const pct4=v=>v!==null&&v!==undefined?(v*100).toFixed(4)+'%':'\u2014';
+
+  // Summary cards
+  const r1d=P.return_1d[lastIdx];
+  const rytd=P.return_ytd[lastIdx];
+  const r1y=P.return_1y[lastIdx];
+  const rsi=P.return_si[lastIdx];
+  const asi=P.alpha_si[lastIdx];
+  document.getElementById('perf-summary').innerHTML=
+    '<div class="stat-card"><div class="stat-label">1-Day Return</div><div class="stat-value'+(r1d>=0?' accent':' red')+'">'+pct4(r1d)+'</div><div class="stat-sub">'+dates[lastIdx]+'</div></div>'+
+    '<div class="stat-card"><div class="stat-label">YTD Return</div><div class="stat-value'+(rytd>=0?' accent':' red')+'">'+pct(rytd)+'</div></div>'+
+    '<div class="stat-card"><div class="stat-label">1-Year Return</div><div class="stat-value'+(r1y>=0?' accent':' red')+'">'+pct(r1y)+'</div></div>'+
+    '<div class="stat-card"><div class="stat-label">Since Inception</div><div class="stat-value accent">'+pct(rsi)+'</div></div>'+
+    '<div class="stat-card"><div class="stat-label">Alpha vs Primary (SI)</div><div class="stat-value'+(asi>=0?' accent':' red')+'">'+pct(asi)+'</div><div class="stat-sub">vs '+BM1+'</div></div>'+
+    '<div class="stat-card"><div class="stat-label">Data Points</div><div class="stat-value">'+n.toLocaleString()+'</div><div class="stat-sub">'+dates[0]+' to '+dates[lastIdx]+'</div></div>';
+
+  // Apply date range filter to performance data
+  function perfSlice(){
+    let si=0,ei=n-1;
+    if(customStart||customEnd){
+      const s=customStart||dates[0],e=customEnd||dates[n-1];
+      while(si<n&&dates[si]<s)si++;
+      while(ei>0&&dates[ei]>e)ei--;
+    }else if(currentRange>0){
+      const cutoff=new Date();cutoff.setMonth(cutoff.getMonth()-currentRange);
+      const cs=cutoff.toISOString().slice(0,10);
+      while(si<n&&dates[si]<cs)si++;
+    }
+    return{si,ei:ei+1};
+  }
+  const{si:s,ei:e}=perfSlice();
+  const sd=dates.slice(s,e);
+
+  // 1. Daily return chart — all three
+  mc('chart-perf-daily',{type:'line',data:{labels:sd,datasets:[
+    {label:'PDMIX (693390130)',data:P.return_1d.slice(s,e),borderColor:'#005a7a',borderWidth:1,pointRadius:0,spanGaps:false,fill:false},
+    {label:BM1,data:P.bm_return_1d.slice(s,e),borderColor:'#c49a2a',borderWidth:0.8,pointRadius:0,spanGaps:false,fill:false},
+    {label:BM2,data:P.bm2_return_1d.slice(s,e),borderColor:'#c0392b',borderWidth:0.8,pointRadius:0,spanGaps:false,fill:false},
+  ]},options:{...co(),plugins:{...co().plugins,tooltip:{...tt(),callbacks:{label:c=>c.dataset.label+': '+(c.parsed.y*100).toFixed(4)+'%'}}},scales:{x:sc(),y:{...sc(),ticks:{...sc().ticks,callback:v=>(v*100).toFixed(2)+'%'}}}}});
+
+  // 2. Cumulative return: fund vs both benchmarks (growth of $1)
+  const fundGrowth=P.return_si.slice(s,e).map(v=>v!==null?1+v:null);
+  const bmGrowth=P.bm_return_si.slice(s,e).map(v=>v!==null?1+v:null);
+  const bm2Growth=P.bm2_return_si.slice(s,e).map(v=>v!==null?1+v:null);
+  mc('chart-perf-cumulative',{type:'line',data:{labels:sd,datasets:[
+    {label:'PDMIX (693390130)',data:fundGrowth,borderColor:'#005a7a',borderWidth:1.5,pointRadius:0,spanGaps:false,fill:false},
+    {label:BM1,data:bmGrowth,borderColor:'#c49a2a',borderWidth:1.5,pointRadius:0,spanGaps:false,fill:false},
+    {label:BM2,data:bm2Growth,borderColor:'#c0392b',borderWidth:1.5,pointRadius:0,spanGaps:false,fill:false},
+  ]},options:{...co(),plugins:{...co().plugins,tooltip:{...tt(),callbacks:{label:c=>{const v=c.parsed.y;return c.dataset.label+': $'+v.toFixed(4)+' ('+((v-1)*100).toFixed(2)+'%)';}}}},scales:{x:sc(),y:{...sc(),ticks:{...sc().ticks,callback:v=>'$'+v.toFixed(2)}}}}});
+
+  // 3. Rolling 1-year return: fund vs both benchmarks
+  mc('chart-perf-rolling',{type:'line',data:{labels:sd,datasets:[
+    {label:'PDMIX 1Y',data:P.return_1y.slice(s,e),borderColor:'#005a7a',borderWidth:1.5,pointRadius:0,spanGaps:false,fill:false},
+    {label:BM1+' 1Y',data:P.bm_return_1y.slice(s,e),borderColor:'#c49a2a',borderWidth:1.5,pointRadius:0,spanGaps:false,fill:false},
+    {label:BM2+' 1Y',data:P.bm2_return_1y.slice(s,e),borderColor:'#c0392b',borderWidth:1.5,pointRadius:0,spanGaps:false,fill:false},
+  ]},options:{...co(),plugins:{...co().plugins,tooltip:{...tt(),callbacks:{label:c=>c.dataset.label+': '+(c.parsed.y*100).toFixed(2)+'%'}}},scales:{x:sc(),y:{...sc(),ticks:{...sc().ticks,callback:v=>(v*100).toFixed(1)+'%'}}}}});
+
+  // 4. Daily alpha vs primary benchmark
+  mc('chart-perf-alpha',{type:'bar',data:{labels:sd,datasets:[
+    {label:'Daily Alpha vs '+BM1,data:P.alpha_1d.slice(s,e),backgroundColor:P.alpha_1d.slice(s,e).map(v=>v>=0?'rgba(1,138,192,0.5)':'rgba(192,57,43,0.5)'),borderWidth:0},
+  ]},options:{...co(),plugins:{...co().plugins,tooltip:{...tt(),callbacks:{label:c=>c.dataset.label+': '+(c.parsed.y*100).toFixed(4)+'%'}}},scales:{x:sc(),y:{...sc(),ticks:{...sc().ticks,callback:v=>(v*100).toFixed(2)+'%'}}}}});
+
+  // 5. Cumulative alpha vs primary (since inception)
+  mc('chart-perf-cum-alpha',{type:'line',data:{labels:sd,datasets:[
+    {label:'Cumulative Alpha vs '+BM1,data:P.alpha_si.slice(s,e),borderColor:'#018AC0',borderWidth:1.5,pointRadius:0,spanGaps:false,
+     fill:{target:'origin',above:'rgba(1,138,192,0.1)',below:'rgba(192,57,43,0.1)'}},
+  ]},options:{...co(),plugins:{...co().plugins,tooltip:{...tt(),callbacks:{label:c=>c.dataset.label+': '+(c.parsed.y*100).toFixed(2)+'%'}}},scales:{x:sc(),y:{...sc(),ticks:{...sc().ticks,callback:v=>(v*100).toFixed(1)+'%'}}}}});
+
+  // 6-7. Capture ratios (window-switchable)
+  buildCaptureCharts(36);
+}
+
+// ─── CAPTURE RATIO CHARTS (window-switchable) ───
+const CAP_BM1='Bloomberg US Aggregate (Primary)';
+const CAP_BM2='Bloomberg US HY 2% Capped (Secondary)';
+let capUpChart=null, capDownChart=null, capWindow=36;
+function buildCaptureCharts(w){
+  const CW=D.capture[String(w)];
+  if(!CW||!CW.date||CW.date.length===0) return;
+  const cd=CW.date;
+  const capOpts={...co(),plugins:{...co().plugins,tooltip:{...tt(),callbacks:{label:c=>c.dataset.label+': '+c.parsed.y.toFixed(1)+'%'}},annotation:{annotations:{line100:{type:'line',yMin:100,yMax:100,borderColor:'rgba(44,62,80,0.2)',borderWidth:1,borderDash:[4,4]}}}},scales:{x:sc(),y:{...sc(),ticks:{...sc().ticks,callback:v=>v+'%'}}}};
+  if(capUpChart){capUpChart.destroy();capUpChart=null;}
+  if(capDownChart){capDownChart.destroy();capDownChart=null;}
+  capUpChart=mc('chart-perf-upside-capture',{type:'line',data:{labels:cd,datasets:[
+    {label:'vs '+CAP_BM1,data:CW.upside_bm1,borderColor:'#c49a2a',borderWidth:1.5,pointRadius:0,spanGaps:false,fill:false},
+    {label:'vs '+CAP_BM2,data:CW.upside_bm2,borderColor:'#c0392b',borderWidth:1.5,pointRadius:0,spanGaps:false,fill:false},
+  ]},options:capOpts});
+  capDownChart=mc('chart-perf-downside-capture',{type:'line',data:{labels:cd,datasets:[
+    {label:'vs '+CAP_BM1,data:CW.downside_bm1,borderColor:'#c49a2a',borderWidth:1.5,pointRadius:0,spanGaps:false,fill:false},
+    {label:'vs '+CAP_BM2,data:CW.downside_bm2,borderColor:'#c0392b',borderWidth:1.5,pointRadius:0,spanGaps:false,fill:false},
+  ]},options:capOpts});
+}
+function setCaptureWindow(w){
+  capWindow=w;
+  document.querySelectorAll('#capture-window-btns button').forEach(b=>b.classList.toggle('active',b.textContent===w+'M'));
+  document.getElementById('cap-window-label-up').textContent='(Rolling '+w+'-Month)';
+  document.getElementById('cap-window-label-down').textContent='(Rolling '+w+'-Month)';
+  buildCaptureCharts(w);
+}
+
+// ─── DATA TABLE ───
+function buildTable(){
+  const d=getData();
+  const cols=[
+    {key:'date',label:'Date',fmt:v=>v},
+    {key:'nav',label:'NAV',fmt:v=>v!=null?'$'+v.toFixed(2):''},
+    {key:'aum',label:'AUM',fmt:v=>v!=null?'$'+fmtB(v):''},
+    {key:'duration',label:'Duration',fmt:v=>v!=null?v.toFixed(2):''},
+    {key:'bull_duration',label:'Bull Dur',fmt:v=>v!=null?v.toFixed(2):''},
+    {key:'bear_duration',label:'Bear Dur',fmt:v=>v!=null?v.toFixed(2):''},
+    {key:'curve_duration',label:'Curve Dur',fmt:v=>v!=null?v.toFixed(2):''},
+    {key:'ytm',label:'YTM %',fmt:v=>v!=null?v.toFixed(2):''},
+    {key:'current_yield',label:'CY %',fmt:v=>v!=null?v.toFixed(2):''},
+    {key:'sec_30d_yield',label:'SEC %',fmt:v=>v!=null?v.toFixed(2):''},
+    {key:'avg_quality',label:'Quality',fmt:v=>v||''},
+    {key:'avg_maturity',label:'Avg Mat',fmt:v=>v!=null?v.toFixed(1):''},
+    {key:'mtg_spread',label:'Mtg Spd',fmt:v=>v!=null?v.toFixed(3):''},
+    {key:'corp_spread',label:'Corp Spd',fmt:v=>v!=null?v.toFixed(3):''},
+    {key:'swap_spread',label:'Swap Spd',fmt:v=>v!=null?v.toFixed(3):''},
+    {key:'em_spread',label:'EM Spd',fmt:v=>v!=null?v.toFixed(3):''},
+    {key:'total_spread',label:'Tot Spd',fmt:v=>v!=null?v.toFixed(3):''},
+    {key:'dts',label:'DTS',fmt:v=>v!=null?v.toFixed(0):''},
+    {key:'latest_div',label:'Div/Sh',fmt:v=>v!=null?'$'+v.toFixed(4):''},
+    {key:'leverage_proxy',label:'Lev Proxy',fmt:v=>v!=null?v.toFixed(3):''},
+  ];
+
+  document.getElementById('table-meta').textContent=
+    d.date.length+' data points · '+currentFreq+' · '+d.date[0]+' to '+d.date[d.date.length-1];
+
+  let html='<table class="data-table"><thead><tr>';
+  cols.forEach(c=>{html+='<th>'+c.label+'</th>';});
+  html+='</tr></thead><tbody>';
+
+  // Show in reverse chronological
+  for(let i=d.date.length-1;i>=0;i--){
+    html+='<tr>';
+    cols.forEach(c=>{
+      const v=d[c.key][i];
+      const formatted=c.fmt(v);
+      html+='<td'+(formatted===''?' class="null"':'')+'>'+
+        (formatted===''?'·':formatted)+'</td>';
+    });
+    html+='</tr>';
+  }
+  html+='</tbody></table>';
+  document.getElementById('table-wrap').innerHTML=html;
+}
+
+// ─── AUDIT TAB ───
+function buildAudit(){
+  if(!D.audit) return;
+  const a=D.audit;
+  const s=a.summary;
+
+  // Summary stats
+  document.getElementById('audit-summary').innerHTML=
+    '<div class="audit-stat total"><div class="num">'+s.checks_run+'</div><div class="lbl">Checks Run</div></div>'+
+    '<div class="audit-stat pass"><div class="num">'+s.passes+'</div><div class="lbl">Passed</div></div>'+
+    '<div class="audit-stat warn"><div class="num">'+s.warnings+'</div><div class="lbl">Warnings</div></div>'+
+    '<div class="audit-stat fail"><div class="num">'+s.failures+'</div><div class="lbl">Failures</div></div>';
+
+  document.getElementById('audit-meta').textContent=
+    'Audit run: '+s.timestamp.replace('T',' ').slice(0,19);
+
+  // Coverage bars
+  const comp=a.completeness;
+  if(comp && comp.field_coverage){
+    let barsHtml='';
+    const entries=Object.entries(comp.field_coverage).sort((a,b)=>b[1].pct-a[1].pct);
+    entries.forEach(([field,info])=>{
+      const pct=info.pct;
+      const color=pct>=95?'#018AC0':pct>=70?'#c49a2a':'#c0392b';
+      barsHtml+='<div class="coverage-bar">'+
+        '<span class="field-name">'+field+'</span>'+
+        '<div class="bar-bg"><div class="bar-fill" style="width:'+pct+'%;background:'+color+'"></div></div>'+
+        '<span class="bar-pct">'+pct+'% ('+info.present+'/'+info.total+')</span>'+
+        '</div>';
+    });
+    document.getElementById('coverage-bars').innerHTML=barsHtml;
+  }
+
+  // Completeness heatmap (as a scatter/matrix chart)
+  if(comp && comp.dates && comp.fields && comp.matrix){
+    const fields=comp.fields;
+    const dates=comp.dates;
+    // Sample dates to max ~80 for readability
+    const step=Math.max(1,Math.floor(dates.length/80));
+    const sampledIdx=[];
+    for(let i=0;i<dates.length;i+=step) sampledIdx.push(i);
+    if(sampledIdx[sampledIdx.length-1]!==dates.length-1) sampledIdx.push(dates.length-1);
+
+    const sampledDates=sampledIdx.map(i=>dates[i]);
+    // Build datasets: one per field
+    const datasets=[];
+    fields.forEach((field,fIdx)=>{
+      const present=[];
+      const missing=[];
+      sampledIdx.forEach((dIdx,sIdx)=>{
+        const val=comp.matrix[field][dIdx];
+        if(val===1){
+          present.push({x:sIdx,y:fIdx});
+        } else {
+          missing.push({x:sIdx,y:fIdx});
+        }
+      });
+      if(present.length>0){
+        datasets.push({
+          label:field+' (present)',
+          data:present,
+          backgroundColor:'#018AC0',
+          pointRadius:3,
+          pointStyle:'rect',
+          showLine:false,
+        });
+      }
+      if(missing.length>0){
+        datasets.push({
+          label:field+' (missing)',
+          data:missing,
+          backgroundColor:'#cdd6df',
+          pointRadius:3,
+          pointStyle:'rect',
+          showLine:false,
+        });
+      }
+    });
+
+    mc('chart-completeness-heatmap',{
+      type:'scatter',
+      data:{datasets:datasets},
+      options:{
+        responsive:true,
+        maintainAspectRatio:false,
+        plugins:{
+          legend:{display:false},
+          tooltip:{
+            ...tt(),
+            callbacks:{
+              label:function(ctx){
+                const fIdx=ctx.parsed.y;
+                const sIdx=ctx.parsed.x;
+                const fn=fields[fIdx]||'?';
+                const dt=sampledDates[sIdx]||'?';
+                const present=ctx.dataset.label.includes('present');
+                return fn+' @ '+dt+': '+(present?'Present':'Missing');
+              }
+            }
+          }
+        },
+        scales:{
+          x:{
+            type:'linear',
+            min:-0.5,
+            max:sampledDates.length-0.5,
+            ticks:{
+              callback:function(v){
+                const i=Math.round(v);
+                if(i>=0&&i<sampledDates.length){
+                  return sampledDates[i].slice(0,7);
+                }
+                return '';
+              },
+              maxTicksLimit:15,
+              color:'#7b8a9a',
+              font:{size:9,family:'"SF Mono","Fira Code",monospace'}
+            },
+            grid:{color:'#e8ecf0'}
+          },
+          y:{
+            type:'linear',
+            min:-0.5,
+            max:fields.length-0.5,
+            reverse:true,
+            ticks:{
+              callback:function(v){
+                const i=Math.round(v);
+                return fields[i]||'';
+              },
+              stepSize:1,
+              color:'#7b8a9a',
+              font:{size:9,family:'"SF Mono","Fira Code",monospace'}
+            },
+            grid:{color:'#e8ecf0'}
+          }
+        }
+      }
+    });
+  }
+
+  // Findings grouped by category
+  const categoryLabels={
+    'internal':'Layer 1: Internal Consistency',
+    'cross_source':'Layer 2: Cross-Source Validation',
+    'anomaly':'Layer 3: Structural Anomaly Detection'
+  };
+  const categoryOrder=['internal','cross_source','anomaly'];
+  const grouped={};
+  a.findings.forEach(f=>{
+    if(!grouped[f.category]) grouped[f.category]=[];
+    grouped[f.category].push(f);
+  });
+
+  let findingsHtml='';
+  categoryOrder.forEach(cat=>{
+    const items=grouped[cat]||[];
+    if(!items.length) return;
+    const catPasses=items.filter(f=>f.severity==='pass').length;
+    const catWarns=items.filter(f=>f.severity==='warning').length;
+    const catFails=items.filter(f=>f.severity==='fail').length;
+
+    findingsHtml+='<div class="audit-category">';
+    findingsHtml+='<div class="audit-category-title">'+categoryLabels[cat]+' ';
+    if(catPasses) findingsHtml+='<span class="badge" style="background:#018AC020;color:#018AC0">'+catPasses+' pass</span>';
+    if(catWarns) findingsHtml+='<span class="badge" style="background:#c49a2a20;color:#c49a2a">'+catWarns+' warn</span>';
+    if(catFails) findingsHtml+='<span class="badge" style="background:#c0392b20;color:#c0392b">'+catFails+' fail</span>';
+    findingsHtml+='</div>';
+
+    items.forEach(f=>{
+      findingsHtml+='<div class="finding-card sev-'+f.severity+'">';
+      findingsHtml+='<div class="finding-header">';
+      findingsHtml+='<span class="finding-name">'+f.check+'</span>';
+      findingsHtml+='<span class="finding-badge '+f.severity+'">'+f.severity.toUpperCase()+'</span>';
+      findingsHtml+='</div>';
+      findingsHtml+='<div class="finding-msg">'+f.message+'</div>';
+
+      // Details block
+      let hasDetail=false;
+      let detailHtml='';
+      if(f.expected){
+        detailHtml+='<span>Expected:</span> '+f.expected+'\n';
+        hasDetail=true;
+      }
+      if(f.actual){
+        detailHtml+='<span>Actual:</span> '+f.actual+'\n';
+        hasDetail=true;
+      }
+      if(f.tolerance){
+        detailHtml+='<span>Tolerance:</span> '+f.tolerance+'\n';
+        hasDetail=true;
+      }
+      if(f.dates && f.dates.length){
+        detailHtml+='<span>Dates:</span> '+f.dates.join(', ')+'\n';
+        hasDetail=true;
+      }
+      if(hasDetail){
+        findingsHtml+='<div class="finding-detail">'+detailHtml.trim()+'</div>';
+      }
+
+      findingsHtml+='</div>';
+    });
+
+    findingsHtml+='</div>';
+  });
+
+  document.getElementById('audit-findings').innerHTML=findingsHtml;
+}
+
+// ─── COMMENTARY TAB ───
+let commentaryFilter='all';
+const CAT_COLORS={duration:'#005a7a',spreads:'#c49a2a',yields:'#018AC0',flows:'#2980b9',quality:'#8e6eb5',risk:'#5b8a9a'};
+const CAT_LABELS={duration:'Duration',spreads:'Spreads',yields:'Yields',flows:'Flows',quality:'Quality',risk:'Risk'};
+
+function buildCommentary(){
+  if(!D||!D.commentary) return;
+  const months=D.commentary.monthly||[];
+  if(!months.length){
+    document.getElementById('commentary-stats').innerHTML=
+      '<div class="stat-card"><div class="stat-label">Status</div><div class="stat-value">No commentary data</div><div class="stat-sub">Re-run build_data_pdmix.py</div></div>';
+    return;
+  }
+
+  const totalBullets=months.reduce((s,m)=>s+m.bullets.length,0);
+  const cats={};
+  months.forEach(m=>m.bullets.forEach(b=>{cats[b.cat]=(cats[b.cat]||0)+1;}));
+
+  document.getElementById('commentary-stats').innerHTML=
+    '<div class="stat-card"><div class="stat-label">Months Analyzed</div><div class="stat-value accent">'+months.length+'</div></div>'+
+    '<div class="stat-card"><div class="stat-label">Observations</div><div class="stat-value">'+totalBullets+'</div></div>'+
+    Object.keys(cats).map(c=>
+      '<div class="stat-card"><div class="stat-label">'+(CAT_LABELS[c]||c)+'</div><div class="stat-value" style="color:'+(CAT_COLORS[c]||'var(--text)')+'">'+cats[c]+'</div></div>'
+    ).join('');
+
+  let ctrlHtml='<button class="commentary-filter active" data-cat="all" onclick="filterCommentary(\'all\')">All</button>';
+  Object.keys(CAT_LABELS).forEach(c=>{
+    if(cats[c]) ctrlHtml+='<button class="commentary-filter" data-cat="'+c+'" onclick="filterCommentary(\''+c+'\')">'+CAT_LABELS[c]+'</button>';
+  });
+  ctrlHtml+='<span class="commentary-count" id="commentary-count">'+totalBullets+' observations</span>';
+  document.getElementById('commentary-controls').innerHTML=ctrlHtml;
+
+  commentaryFilter='all';
+  renderCommentary();
+}
+
+function filterCommentary(cat){
+  commentaryFilter=cat;
+  document.querySelectorAll('.commentary-filter').forEach(b=>b.classList.toggle('active',b.dataset.cat===cat));
+  renderCommentary();
+}
+
+function renderCommentary(){
+  const months=D.commentary.monthly||[];
+  const cat=commentaryFilter;
+  let html='';
+  let count=0;
+
+  months.forEach(m=>{
+    const bullets=cat==='all'?m.bullets:m.bullets.filter(b=>b.cat===cat);
+    if(!bullets.length) return;
+
+    html+='<div class="cm-month">';
+    html+='<div class="cm-month-header">'+m.label+'<span class="cm-badge">'+bullets.length+' observation'+(bullets.length>1?'s':'')+'</span></div>';
+
+    bullets.forEach(b=>{
+      const catClass='cat-'+b.cat;
+      html+='<div class="cm-bullet '+catClass+'">';
+      html+='<div class="cm-bullet-header">';
+      html+='<span class="cm-cat-tag '+catClass+'">'+(CAT_LABELS[b.cat]||b.cat)+'</span>';
+      html+='<span class="cm-title">'+b.t+'</span>';
+      html+='</div>';
+      html+='<div class="cm-detail">'+b.d+'</div>';
+      html+='</div>';
+      count++;
+    });
+
+    html+='</div>';
+  });
+
+  document.getElementById('commentary-timeline').innerHTML=html;
+  const el=document.getElementById('commentary-count');
+  if(el) el.textContent=count+' observations'+(cat!=='all'?' (filtered)':'');
+}
+
+// ─── STALENESS TAB ───
+function buildStaleness(){
+  const st=D.staleness;
+  if(!st||!st.field_stats||st.summary.status==='insufficient_data'){
+    document.getElementById('staleness-summary').innerHTML=
+      '<div class="stat-card"><div class="stat-label">Status</div><div class="stat-value">No daily data</div><div class="stat-sub">Run daily fetch first</div></div>';
+    return;
+  }
+  const sm=st.summary;
+
+  // Summary cards
+  document.getElementById('staleness-summary').innerHTML=
+    '<div class="stat-card"><div class="stat-label">Daily Data Points</div><div class="stat-value accent">'+sm.daily_count.toLocaleString()+'</div><div class="stat-sub">'+sm.date_range+'</div></div>'+
+    '<div class="stat-card"><div class="stat-label">Daily Fields OK</div><div class="stat-value" style="color:#018AC0">'+sm.daily_fields_ok+'</div><div class="stat-sub">Change rate >50%</div></div>'+
+    '<div class="stat-card"><div class="stat-label">Stale Fields</div><div class="stat-value" style="color:'+(sm.daily_fields_stale>0?'#c0392b':'#018AC0')+'">'+sm.daily_fields_stale+'</div><div class="stat-sub">Change rate ≤50%</div></div>'+
+    '<div class="stat-card"><div class="stat-label">Status</div><div class="stat-value" style="color:'+(sm.status==='ok'?'#018AC0':'#c49a2a')+'">'+(sm.status==='ok'?'HEALTHY':'CHECK')+'</div></div>';
+
+  // Main table
+  const fs=st.field_stats;
+  const fields=Object.keys(fs).sort((a,b)=>{
+    if(fs[a].expected_frequency!==fs[b].expected_frequency)return fs[a].expected_frequency==='daily'?-1:1;
+    return fs[b].change_rate-fs[a].change_rate;
+  });
+
+  let html='<table class="data-table"><thead><tr>';
+  html+='<th style="text-align:left">Field</th><th>Expected</th><th>Pairs</th><th>Changed</th><th>Unchanged</th><th>Change Rate</th><th>Stale Runs</th>';
+  html+='</tr></thead><tbody>';
+  fields.forEach(f=>{
+    const s=fs[f];
+    const isDaily=s.expected_frequency==='daily';
+    const rateColor=isDaily?(s.change_rate>70?'#018AC0':s.change_rate>30?'#c49a2a':'#c0392b'):'#7b8a9a';
+    html+='<tr>';
+    html+='<td style="text-align:left;color:var(--accent)">'+s.label+'</td>';
+    html+='<td><span style="color:'+(isDaily?'#005a7a':'#7b8a9a')+'">'+s.expected_frequency+'</span></td>';
+    html+='<td>'+s.total_pairs.toLocaleString()+'</td>';
+    html+='<td>'+s.changed.toLocaleString()+'</td>';
+    html+='<td>'+s.unchanged.toLocaleString()+'</td>';
+    html+='<td style="color:'+rateColor+';font-weight:600">'+s.change_rate+'%</td>';
+    html+='<td>'+(s.stale_runs.length>0?'<span style="color:#c49a2a">'+s.stale_runs.length+'</span>':'<span style="color:#018AC0">0</span>')+'</td>';
+    html+='</tr>';
+  });
+  html+='</tbody></table>';
+  document.getElementById('staleness-table-wrap').innerHTML=html;
+
+  // Change rate chart
+  const labels=fields.map(f=>fs[f].label);
+  const rates=fields.map(f=>fs[f].change_rate);
+  const barColors=fields.map(f=>{
+    const s=fs[f];
+    if(s.expected_frequency==='monthly')return '#a0adb8';
+    if(s.change_rate>70)return '#018AC0';
+    if(s.change_rate>30)return '#c49a2a';
+    return '#c0392b';
+  });
+
+  mc('chart-change-rate',{type:'bar',data:{labels,datasets:[{label:'Change Rate %',data:rates,backgroundColor:barColors,borderWidth:0,borderRadius:2}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...tt(),callbacks:{label:c=>c.parsed.x+'% of consecutive pairs changed'}}},scales:{x:{...sc(),max:100,ticks:{...sc().ticks,callback:v=>v+'%'}},y:{...sc(),ticks:{...sc().ticks,font:{size:10}}}}}});
+
+  // Stale runs detail
+  let allRuns=[];
+  fields.forEach(f=>{
+    fs[f].stale_runs.forEach(r=>{
+      allRuns.push({field:fs[f].label,expected:fs[f].expected_frequency,...r});
+    });
+  });
+  allRuns.sort((a,b)=>b.days-a.days);
+
+  if(allRuns.length===0){
+    document.getElementById('stale-runs-wrap').innerHTML='<p style="color:#018AC0;font-family:var(--mono);font-size:12px">No stale runs detected. All daily fields are updating as expected.</p>';
+  }else{
+    let rhtml='<table class="data-table"><thead><tr><th style="text-align:left">Field</th><th>Start</th><th>End</th><th>Days</th><th>Stuck Value</th></tr></thead><tbody>';
+    allRuns.slice(0,100).forEach(r=>{
+      rhtml+='<tr><td style="text-align:left;color:var(--accent)">'+r.field+'</td>';
+      rhtml+='<td>'+r.start+'</td><td>'+r.end+'</td>';
+      rhtml+='<td style="color:'+(r.days>=20?'#c0392b':r.days>=10?'#c49a2a':'var(--text)')+'">'+r.days+'</td>';
+      const val=typeof r.value==='number'?r.value.toFixed(4):r.value;
+      rhtml+='<td>'+val+'</td></tr>';
+    });
+    rhtml+='</tbody></table>';
+    document.getElementById('stale-runs-wrap').innerHTML=rhtml;
+  }
+}
+
+// ─── NAVIGATION ───
+function showTab(tab){
+  currentTab=tab;
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sec-'+tab).classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(b=>b.classList.toggle('active',b.dataset.section===tab));
+}
+
+function setRange(months){
+  currentRange=months;
+  customStart=null;customEnd=null;
+  document.getElementById('range-start').value='';
+  document.getElementById('range-end').value='';
+  document.querySelectorAll('.range-btn').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.range)===months));
+  document.querySelectorAll('.cr-btn[data-cr]').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.cr)===months));
+  buildAll();
+}
+
+function setFreq(freq){
+  if(freq==='daily'&&(!D.daily||!D.daily.date||D.daily.date.length===0)){
+    alert('Daily data not yet available. Run the daily fetch script first.');return;
+  }
+  if(freq==='daily'&&currentFreq!=='daily'){
+    const n=D.daily.date.length;
+    document.getElementById('daily-count-label').textContent=n.toLocaleString()+' daily data points ('+D.meta.daily_start+' to '+D.meta.daily_end+')';
+    document.getElementById('daily-confirm-overlay').classList.add('show');
+    return;
+  }
+  currentFreq=freq;
+  document.querySelectorAll('.freq-btn').forEach(b=>b.classList.toggle('active',b.dataset.freq===freq));
+  buildAll();
+}
+function confirmDailyRange(months){
+  document.getElementById('daily-confirm-overlay').classList.remove('show');
+  currentFreq='daily';
+  currentRange=months;
+  customStart=null;customEnd=null;
+  document.getElementById('range-start').value='';
+  document.getElementById('range-end').value='';
+  document.querySelectorAll('.freq-btn').forEach(b=>b.classList.toggle('active',b.dataset.freq==='daily'));
+  document.querySelectorAll('.range-btn').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.range)===months));
+  document.querySelectorAll('.cr-btn[data-cr]').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.cr)===months));
+  buildAll();
+}
+function cancelDaily(){
+  document.getElementById('daily-confirm-overlay').classList.remove('show');
+}
+
+function setCustomRange(){
+  const s=document.getElementById('range-start').value;
+  const e=document.getElementById('range-end').value;
+  if(s)customStart=s;
+  if(e)customEnd=e;
+  if(customStart||customEnd){
+    currentRange=-1;
+    document.querySelectorAll('.range-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.cr-btn[data-cr]').forEach(b=>b.classList.remove('active'));
+  }
+  buildAll();
+}
+
+// ─── INFO MODAL ───
+function showInfo(key){
+  const info=INFO[key];
+  if(!info)return;
+  document.getElementById('modal-title').textContent=info.title;
+  document.getElementById('modal-body').innerHTML=info.body;
+  document.getElementById('modal-overlay').classList.add('show');
+}
+function closeInfo(){
+  document.getElementById('modal-overlay').classList.remove('show');
+}
+
+// ─── EXPORT CSV ───
+function exportCSV(){
+  const d=getData();
+  const fields=FIELDS_FOR_CSV;
+  let csv=fields.join(',')+'\n';
+  for(let i=0;i<d.date.length;i++){
+    csv+=fields.map(f=>{
+      const v=d[f]?d[f][i]:null;
+      return v!=null?v:'';
+    }).join(',')+'\n';
+  }
+  const blob=new Blob([csv],{type:'text/csv'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download='pdmix_'+currentFreq+'.csv';a.click();
+  URL.revokeObjectURL(url);
+}
+const FIELDS_FOR_CSV=['date','nav','aum','duration','bull_duration','bear_duration','curve_duration',
+  'avg_maturity','avg_quality','current_yield','ytm','sec_30d_yield','unsub_sec_yield','etf_yield',
+  'mtg_spread','corp_spread','swap_spread','em_spread','covered_spread','sovg_spread','total_spread',
+  'dts','convexity_proxy','bull_bear_asym','leverage_proxy','ann_dist_yield','latest_div','div_ytd',
+  'shares','portfolio_mv'];
+
+// ─── SHARE VIEW ───
+function getViewState(){
+  const s={};
+  const tab=document.querySelector('.nav-tab.active');
+  if(tab) s.tab=tab.dataset.tab;
+  s.freq=currentFreq;
+  s.range=currentRange;
+  if(capWindow!==36) s.cw=capWindow;
+  s.sy=Math.round(window.scrollY);
+  return Object.keys(s).length?s:null;
+}
+function stateToHash(s){
+  if(!s) return '';
+  return '#'+btoa(JSON.stringify(s));
+}
+function restoreFromHash(){
+  const h=location.hash.slice(1);
+  if(!h) return;
+  try{
+    const s=JSON.parse(atob(h));
+    if(s.freq) setFreq(s.freq);
+    if(s.range!==undefined) setRange(s.range);
+    if(s.tab){const t=document.querySelector('.nav-tab[data-tab="'+s.tab+'"]');if(t) t.click();}
+    if(s.cw) setCaptureWindow(s.cw);
+    if(s.sy) setTimeout(()=>window.scrollTo({top:s.sy,behavior:'instant'}),100);
+  }catch(e){}
+}
+function shareView(){
+  const s=getViewState();
+  const url=location.origin+location.pathname+stateToHash(s);
+  navigator.clipboard.writeText(url).then(()=>{
+    const t=document.getElementById('share-toast');
+    t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'),2000);
+  }).catch(()=>{
+    const ta=document.createElement('textarea');ta.value=url;
+    ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');const t=document.getElementById('share-toast');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000);}catch(e){}
+    document.body.removeChild(ta);
+  });
+}
+</script>
+<div class="share-fab" onclick="shareView()" title="Copy share link"><div class="share-fab-btn"><svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg>Share View</div></div>
+<div class="share-toast" id="share-toast">Link copied</div>
+</body>
+</html>
